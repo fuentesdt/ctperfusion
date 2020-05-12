@@ -87,8 +87,8 @@ main(int argc, char ** argv)
 
   // Software Guide : BeginCodeSnippet
   using PixelType = short;
-  constexpr unsigned int Dimension = 4;
-  using ImageType = itk::Image<PixelType, Dimension>;
+  constexpr unsigned int Dimension = 3;
+  using ImageType = itk::VectorImage<PixelType, Dimension>;
   // Software Guide : EndCodeSnippet
 
 

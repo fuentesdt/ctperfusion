@@ -13,12 +13,14 @@ endforeach()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(itkSLICImageFilterTest)
+project(perfusion)
 
 # Find ITK.
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
-add_executable(itkSLICImageFilterTest itkSLICImageFilterTest.cxx )
+add_executable(itkSLICImageFilter itkSLICImageFilter.cxx )
+add_executable(ImageReadWrite     ImageReadWrite.cxx )
 
-target_link_libraries(itkSLICImageFilterTest ${ITK_LIBRARIES})
+target_link_libraries(itkSLICImageFilter  ${ITK_LIBRARIES})
+target_link_libraries(ImageReadWrite      ${ITK_LIBRARIES})
