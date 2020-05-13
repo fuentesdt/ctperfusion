@@ -16,6 +16,8 @@ tags:
 .PHONY: tags
 
 
+Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
+	c3d $^ -multiply -o $@
 Processed/0001/slic.nii.gz:
 	./itkSLICImageFilter Processed/0001/dynamic.0033.nii.gz $@ 20 1
 Processed/0001/setup:
