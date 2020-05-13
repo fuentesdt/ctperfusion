@@ -2,7 +2,7 @@
 % output - nifti auc map
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 InputNRRD    = 'Processed/0001/dynamic.nrrd'
-InputAIFNifti= 'Processed/0001/label.nii.gz'
+InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
@@ -46,37 +46,59 @@ deltatmedian =  median(deltat)
 %%    timing = deltatmedian *[0:length(timing)-1]
 %%    deltat = deltatmedian *ones(1,length(timing))
 %% end
-%% 
-%% 
-%% 
-%% %% Load AIF
-%% disp(['aiflabel = load_untouch_nii(''',InputAIFNifti,''');']);
-%% aiflabel  = load_untouch_nii(InputAIFNifti);
-%% aifID = int32(aiflabel.img);
-%% 
-%% %% nifti info
-%% [npixelx, npixely, npixelz] = size(aifID);
-%% spacingX = aiflabel.hdr.dime.pixdim(2);
-%% spacingY = aiflabel.hdr.dime.pixdim(3);
-%% spacingZ = aiflabel.hdr.dime.pixdim(4);
-%% disp([npixelx, npixely, npixelz, spacingX, spacingY, spacingZ]);
-%% 
-%% %% find indices of ROI
-%% if isempty(find(aifID >0 ))
-%%    error('\n\n\t no aif input:  %s ',InputAIFNifti);
-%% end
-%% [xroi,yroi,zroi] = ind2sub(size(aifID), find(aifID >0 ));
-%% 
-%% %% extract AIF info
-%% aif  = zeros(size(rawdce,1),length(xroi));
-%% for jjj =1:length(xroi)
-%%   disp([xroi(jjj),yroi(jjj),zroi(jjj)]);
-%%   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
-%% end
-%% 
-%% % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
-%% 
-%% %% extract AIF derivative info
+
+
+
+%% Load AIF
+disp(['aiflabel = load_untouch_nii(''',InputAIFNifti,''');']);
+aiflabel  = load_untouch_nii(InputAIFNifti);
+aifID = int32(aiflabel.img);
+
+%% nifti info
+[npixelx, npixely, npixelz] = size(aifID);
+spacingX = aiflabel.hdr.dime.pixdim(2);
+spacingY = aiflabel.hdr.dime.pixdim(3);
+spacingZ = aiflabel.hdr.dime.pixdim(4);
+disp([npixelx, npixely, npixelz, spacingX, spacingY, spacingZ]);
+
+%% find indices of ROI
+if isempty(find(aifID >0 ))
+   error('\n\n\t no aif input:  %s ',InputAIFNifti);
+end
+% TODO 
+aifLabelValue = 1685;
+[xroi,yroi,zroi] = ind2sub(size(aifID), find(aifID ==aifLabel  ));
+
+% extract AIF info
+aif  = zeros(size(rawdce,1),length(xroi));
+for jjj =1:length(xroi)
+  disp([xroi(jjj),yroi(jjj),zroi(jjj)]);
+  aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
+end
+
+
+
+% the unique label values form the basis
+[uniquelabelsfull, ~, indlabelval] = unique(aifID);
+% the subvector for the solution
+subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
+Avaltmp = uniquelabelsfull;
+
+% initialize
+x0 = zeros(2*length(subuniqueidx),1);
+myfunc = @(x)analyticsoln(x,a,b,c);
+
+% solve
+opts1=  optimset('display','on');
+x = lsqnonlin(myfunc,x0,[],[],opts1);
+
+
+
+
+% plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
+% plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
+
+%% extract AIF derivative info
 %% diffaif  = zeros(size(rawdce,1),length(xroi));
 %% for iii =2:size(rawdce,1)
 %%     diffaif(iii,:)  = (aif(iii,:) - aif(iii-1,:))/deltat(iii);
