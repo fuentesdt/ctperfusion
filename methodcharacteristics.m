@@ -29,18 +29,18 @@ end
 disp(['[rawdce, dcemeta] =nrrdread(''',InputNRRD,''');']);
 [rawdce, dcemeta] = nrrdread(InputNRRD);
 
-%% %% Get Timing Info
-%% rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
-%% if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
-%%   timing = rawtiming * 1.e-3   % convert to seconds 
-%% end
-%% 
-%% %% variable spacing
-%% deltat =  [ timing(2) - timing(1), timing(2:length(timing)) - timing(1:length(timing)-1)]
-%% 
-%% deltatmean   =  mean(deltat)
-%% deltatmedian =  median(deltat)
-%% % HACK - use median time as constant spacing
+%% Get Timing Info
+rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
+if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
+  timing = rawtiming * 1.e-3   % convert to seconds 
+end
+
+%% variable spacing
+deltat =  [ timing(2) - timing(1), timing(2:length(timing)) - timing(1:length(timing)-1)]
+
+deltatmean   =  mean(deltat)
+deltatmedian =  median(deltat)
+% HACK - use median time as constant spacing
 %% if (deltatmean   > 1.5 * deltatmedian )
 %%    disp('timing error?? \n ');
 %%    timing = deltatmedian *[0:length(timing)-1]
