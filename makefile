@@ -16,6 +16,8 @@ tags:
 .PHONY: tags
 
 
+Processed/0001/sdt.nii.gz: Processed/0001/slic.nii.gz
+	c3d -verbose $<  -threshold 1685 1685 1 0 -sdt -o $@ 
 Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -multiply -o $@
 Processed/0001/slic.nii.gz:

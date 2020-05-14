@@ -3,12 +3,14 @@
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 InputNRRD    = 'Processed/0001/dynamic.nrrd'
 InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
+InputDistance= 'Processed/0001/std.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
 disp( ['c3dexe=         ''',c3dexe         ,''';']);      
 disp( ['InputNRRD=      ''',InputNRRD      ,''';']);      
 disp( ['InputAIFNifti=  ''',InputAIFNifti  ,''';']);  
+disp( ['InputDistance=  ''',InputDistance  ,''';']);  
 disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']); 
 
 OutputAUC = [OutputBase,'.roirel.nii.gz'];
@@ -48,6 +50,11 @@ deltatmedian =  median(deltat)
 %% end
 
 
+%% Load Distance
+disp(['aiflabel = load_untouch_nii(''',InputDistance  ,''');']);
+distancenii  = load_untouch_nii(InputDistance  );
+distanceImage= distancenii.img;
+
 
 %% Load AIF
 disp(['aiflabel = load_untouch_nii(''',InputAIFNifti,''');']);
@@ -76,27 +83,23 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
-
+% plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
+% plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
 % the unique label values form the basis
 [uniquelabelsfull, ~, indlabelval] = unique(aifID);
 % the subvector for the solution
 subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
-Avaltmp = uniquelabelsfull;
+alphatmp = uniquelabelsfull;
 
 % initialize
-x0 = zeros(2*length(subuniqueidx),1);
-myfunc = @(x)analyticsoln(x,a,b,c);
+x0 = zeros(length(subuniqueidx),1);
+myfunc = @(x)analyticsoln(x,timing,rawdce,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1));
 
 % solve
 opts1=  optimset('display','on');
 x = lsqnonlin(myfunc,x0,[],[],opts1);
 
-
-
-
-% plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
-% plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
 %% extract AIF derivative info
 %% diffaif  = zeros(size(rawdce,1),length(xroi));
