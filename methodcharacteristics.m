@@ -3,7 +3,7 @@
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 InputNRRD    = 'Processed/0001/dynamic.nrrd'
 InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
-InputDistance= 'Processed/0001/std.nii.gz'
+InputDistance= 'Processed/0001/sdt.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
@@ -59,7 +59,7 @@ distanceImage= distancenii.img;
 %% Load AIF
 disp(['aiflabel = load_untouch_nii(''',InputAIFNifti,''');']);
 aiflabel  = load_untouch_nii(InputAIFNifti);
-aifID = int32(aiflabel.img);
+aifID = aiflabel.img;
 
 %% nifti info
 [npixelx, npixely, npixelz] = size(aifID);
@@ -79,7 +79,7 @@ aifLabelValue = 1685;
 % extract AIF info
 aif  = zeros(size(rawdce,1),length(xroi));
 for jjj =1:length(xroi)
-  disp([xroi(jjj),yroi(jjj),zroi(jjj)]);
+  %disp([xroi(jjj),yroi(jjj),zroi(jjj)]);
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
@@ -90,14 +90,14 @@ end
 [uniquelabelsfull, ~, indlabelval] = unique(aifID);
 % the subvector for the solution
 subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
-alphatmp = uniquelabelsfull;
+alphatmp = ones(length(uniquelabelsfull),1);
 
 % initialize
-x0 = zeros(length(subuniqueidx),1);
-myfunc = @(x)analyticsoln(x,timing,rawdce,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1));
+x0 = ones(length(subuniqueidx),1);
+myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1));
 
 % solve
-opts1=  optimset('display','on');
+opts1=  optimset('display','iter-detailed','Algorithm','levenberg-marquardt', 'Diagnostics','on');
 x = lsqnonlin(myfunc,x0,[],[],opts1);
 
 
