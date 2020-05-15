@@ -10,7 +10,7 @@ image1Dsize = length(distanceImage(:));
 %residual= zeros(length(timing)*image1Dsize ,1);
 residual= zeros(image1Dsize ,1);
 %for kkk  = 1:length(timing)
-for kkk  = 10:10
+for kkk  = 13:13
   %% calculate xi
   xiImage = timing(kkk) - distanceImage.*(alphaImage.^-1);
   disp(sprintf('time = %d, min %4.1f , max %4.1f',kkk, min(xiImage(:)), max(xiImage(:)) ));
@@ -27,6 +27,7 @@ for kkk  = 10:10
   % set OOB values
   xiImage(zeroIdx) = 1;
   xiImage(oobIdx)=length(timing);
+  disp(sprintf('min %4.1f, max %4.1f, mean %4.1f, var %4.1f', min(xiImage(:)), max(xiImage(:)) , mean(xiImage(:)), std(xiImage(:)) ));
 
   % get predictec values
   modelValues = aif(xiImage);
@@ -35,7 +36,8 @@ for kkk  = 10:10
   currentrawdata = rawdce(kkk,:,:,:);
   %residual( ((kkk-1)*image1Dsize +1):kkk*image1Dsize )= double(currentrawdata(:)) - modelValues(:) ;
   residual = double(currentrawdata(:)) - modelValues(:) ;
-  residual(workarray~=0 & workarray~=aifLabelValue) = 0 ; 
+  residual(workarray==0 ) = 0 ; 
+  residual(workarray==aifLabelValue) = 0 ; 
  
   % accumulate jacobian 
   derivValues = (distanceImage.* alphaImage.^-2).* derivaif(xiImage);

@@ -96,14 +96,14 @@ plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 derivaif = [ 0; aif(2:length(aif(:,1)),1) - aif(1:length(aif(:,1))-1,1)];
 
 % initialize
-x0 = ones(length(uniquelabelsfull),1);
+x0 = 10*ones(length(uniquelabelsfull),1);
 mycurrentsoln = zeros(length(uniquelabelsfull),1);
 myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
 
 % solve  
 opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on','JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ));
 
-x = lsqnonlin(myfunc,x0,[],[],opts1);
+[x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
 
 
 %% extract AIF derivative info
