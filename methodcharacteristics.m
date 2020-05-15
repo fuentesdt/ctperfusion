@@ -86,32 +86,22 @@ for jjj =1:length(xroi)
 end
 
 
-% plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
+plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
 % the unique label values form the basis
 [uniquelabelsfull, revlabelval, indlabelval] = unique(aifID);
 
-% the subvector for the residual
-subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
-alphatmp = ones(length(uniquelabelsfull),1);
-
 % build data structures for jacobian build
 derivaif = [ 0; aif(2:length(aif(:,1)),1) - aif(1:length(aif(:,1))-1,1)];
-workarray = uniquelabelsfull(indlabelval);
-jacbuildtmp = [1:length(indlabelval)]';
-jacbuildtmptwo =  jacbuildtmp(workarray~=0 & workarray~=aifLabelValue); 
-indlabelvaltmp =  indlabelval(workarray~=0 & workarray~=aifLabelValue); 
-sparsenonzeros =  ones(size(indlabelvaltmp));
-jacobianhelper = sparse(jacbuildtmptwo,indlabelvaltmp,sparsenonzeros,length(indlabelval),length(uniquelabelsfull)); 
 
 % initialize
-x0 = ones(length(subuniqueidx),1);
-mycurrentsoln = zeros(length(subuniqueidx),1);
-myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1),derivaif,jacobianhelper ,mycurrentsoln );
+x0 = ones(length(uniquelabelsfull),1);
+mycurrentsoln = zeros(length(uniquelabelsfull),1);
+myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
 
 % solve  
-opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on','JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1),derivaif,mycurrentsoln ));
+opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on','JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ));
 
 x = lsqnonlin(myfunc,x0,[],[],opts1);
 

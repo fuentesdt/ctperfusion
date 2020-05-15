@@ -1,10 +1,9 @@
-function [residual,jacobian]= analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif,derivaif,jacobianhelper ,mycurrentsoln)
+function [residual,jacobian]= analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif,derivaif,aifLabelValue)
 
 %% prepare data structures
-mycurrentsoln = x;
-alphatmp(subuniqueidx ) = x;
-alphaImage = alphatmp(indlabelval);
+alphaImage = x(indlabelval);
 alphaImage = reshape(alphaImage, size(aifID));
+workarray = aifID(:);
 
 image1Dsize = length(distanceImage(:));
 %loop over all time
@@ -34,10 +33,16 @@ for kkk  = 10:10
 
   % accumulate residual 
   currentrawdata = rawdce(kkk,:,:,:);
-  residual( ((kkk-1)*image1Dsize +1):kkk*image1Dsize )= double(currentrawdata(:)) - modelValues(:) ;
+  %residual( ((kkk-1)*image1Dsize +1):kkk*image1Dsize )= double(currentrawdata(:)) - modelValues(:) ;
+  residual = double(currentrawdata(:)) - modelValues(:) ;
+  residual(workarray~=0 & workarray~=aifLabelValue) = 0 ; 
  
   % accumulate jacobian 
   derivValues = (distanceImage.* alphaImage.^-2).* derivaif(xiImage);
-  jacobian = (jacobianhelper' * double(derivValues(:)))' ;
+  jacbuildtmp = [1:length(indlabelval)]';
+  %jacbuildtmptwo =  jacbuildtmp(workarray~=0 & workarray~=aifLabelValue); 
+  %indlabelvaltmp =  indlabelval(workarray~=0 & workarray~=aifLabelValue); 
+  jacobian = sparse(jacbuildtmp,indlabelval,double(derivValues(:)),length(indlabelval),length(x)); 
+
 end
 
