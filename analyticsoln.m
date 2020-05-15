@@ -1,4 +1,4 @@
-function [residual]= analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif)
+function [residual]= analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,jacobianhelper,aif,derivaif)
 
 %% prepare data structures
 alphatmp(subuniqueidx ) = x;
@@ -32,5 +32,9 @@ for kkk  = 1:length(timing)
   % accumulate residual 
   currentrawdata = rawdce(kkk,:,:,:);
   residual( ((kkk-1)*image1Dsize +1):kkk*image1Dsize )= double(currentrawdata(:)) - modelValues(:) ;
+
+  % accumulate jacobian 
+  derivValues = (distanceImage.* alphaImage.^-2).* derivaif(xiImage);
+  jacobian =  jacobianhelper * derivValues(:); 
 end
 

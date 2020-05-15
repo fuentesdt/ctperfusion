@@ -83,18 +83,23 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
+
 % plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
 % the unique label values form the basis
-[uniquelabelsfull, ~, indlabelval] = unique(aifID);
+[uniquelabelsfull, revlabelval, indlabelval] = unique(aifID);
 % the subvector for the solution
 subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
 alphatmp = ones(length(uniquelabelsfull),1);
 
+% build data structure for jacobian build
+jacobianhelper = SPARSE(revlabelval,indlabelval,ones(size(aifID(:))));
+derivaif = [ 0, aif(2:length(aif(:,1))) - aif(1:length(aif)-1)];
+
 % initialize
 x0 = ones(length(subuniqueidx),1);
-myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1));
+myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,jacobianhelper,aif(:,1),derivaif);
 
 % solve
 opts1=  optimset('display','iter-detailed','Algorithm','levenberg-marquardt', 'Diagnostics','on');
