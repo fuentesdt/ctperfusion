@@ -1,3 +1,5 @@
+clear all 
+close all
 % input -  raw DCE NRRD, label file for aif, auc time intervale
 % output - nifti auc map
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
@@ -92,9 +94,10 @@ end
 % the subvector for the solution
 subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
 alphatmp = ones(length(uniquelabelsfull),1);
+jacbuildtmp = [1:length(uniquelabelsfull)];
 
 % build data structure for jacobian build
-jacobianhelper = SPARSE(revlabelval,indlabelval,ones(size(aifID(:))));
+jacobianhelper = sparse(jacbuildtmp(indlabelval),indlabelval,ones(size(aifID(:))));
 derivaif = [ 0, aif(2:length(aif(:,1))) - aif(1:length(aif)-1)];
 
 % initialize
@@ -102,7 +105,7 @@ x0 = ones(length(subuniqueidx),1);
 myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,jacobianhelper,aif(:,1),derivaif);
 
 % solve
-opts1=  optimset('display','iter-detailed','Algorithm','levenberg-marquardt', 'Diagnostics','on');
+opts1=  optimset('display','iter-detailed','Algorithm','levenberg-marquardt', 'Jacobian','on', 'Diagnostics','on');
 x = lsqnonlin(myfunc,x0,[],[],opts1);
 
 
