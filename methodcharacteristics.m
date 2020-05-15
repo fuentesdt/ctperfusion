@@ -76,7 +76,7 @@ if isempty(find(aifID >0 ))
 end
 % TODO 
 aifLabelValue = 1685;
-[xroi,yroi,zroi] = ind2sub(size(aifID), find(aifID ==aifLabel  ));
+[xroi,yroi,zroi] = ind2sub(size(aifID), find(aifID ==aifLabelValue  ));
 
 % extract AIF info
 aif  = zeros(size(rawdce,1),length(xroi));
@@ -91,21 +91,28 @@ end
 
 % the unique label values form the basis
 [uniquelabelsfull, revlabelval, indlabelval] = unique(aifID);
-% the subvector for the solution
+
+% the subvector for the residual
 subuniqueidx = find(uniquelabelsfull ~=0 & uniquelabelsfull ~=aifLabelValue);
 alphatmp = ones(length(uniquelabelsfull),1);
-jacbuildtmp = [1:length(uniquelabelsfull)];
 
-% build data structure for jacobian build
-jacobianhelper = sparse(jacbuildtmp(indlabelval),indlabelval,ones(size(aifID(:))));
-derivaif = [ 0, aif(2:length(aif(:,1))) - aif(1:length(aif)-1)];
+% build data structures for jacobian build
+derivaif = [ 0; aif(2:length(aif(:,1)),1) - aif(1:length(aif(:,1))-1,1)];
+workarray = uniquelabelsfull(indlabelval);
+jacbuildtmp = [1:length(indlabelval)]';
+jacbuildtmptwo =  jacbuildtmp(workarray~=0 & workarray~=aifLabelValue); 
+indlabelvaltmp =  indlabelval(workarray~=0 & workarray~=aifLabelValue); 
+sparsenonzeros =  ones(size(indlabelvaltmp));
+jacobianhelper = sparse(jacbuildtmptwo,indlabelvaltmp,sparsenonzeros,length(indlabelval),length(uniquelabelsfull)); 
 
 % initialize
 x0 = ones(length(subuniqueidx),1);
-myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,jacobianhelper,aif(:,1),derivaif);
+mycurrentsoln = zeros(length(subuniqueidx),1);
+myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1),derivaif,jacobianhelper ,mycurrentsoln );
 
-% solve
-opts1=  optimset('display','iter-detailed','Algorithm','levenberg-marquardt', 'Jacobian','on', 'Diagnostics','on');
+% solve  
+opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on','JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,alphatmp,indlabelval,subuniqueidx,aif(:,1),derivaif,mycurrentsoln ));
+
 x = lsqnonlin(myfunc,x0,[],[],opts1);
 
 
