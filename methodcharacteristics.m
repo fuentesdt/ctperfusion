@@ -4,7 +4,7 @@ close all
 % output - nifti auc map
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 InputNRRD    = 'Processed/0001/dynamic.nrrd'
-InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
+InputAIFNifti= 'Processed/0001/mask.nii.gz'
 InputDistance= 'Processed/0001/sdt.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
@@ -75,7 +75,7 @@ if isempty(find(aifID >0 ))
    error('\n\n\t no aif input:  %s ',InputAIFNifti);
 end
 % TODO 
-aifLabelValue = 1685;
+aifLabelValue = 1;
 [xroi,yroi,zroi] = ind2sub(size(aifID), find(aifID ==aifLabelValue  ));
 
 % extract AIF info
@@ -96,12 +96,12 @@ plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 derivaif = [ 0; (aif(2:length(aif(:,1)),1) - aif(1:length(aif(:,1))-1,1))./timing(2:length(timing))'];
 
 % initialize
-x0 = .5*ones(length(uniquelabelsfull),1);
+x0 = 5.*ones(length(uniquelabelsfull),1);
 mycurrentsoln = zeros(length(uniquelabelsfull),1);
 myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
 
-% solve  'JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln )
-opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','off', 'Diagnostics','on');
+% solve  'JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ), 'InitDamping', '100'
+opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'on' , 'FinDiffRelStep',1.e-4);
 
 [x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
 
