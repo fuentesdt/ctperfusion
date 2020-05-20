@@ -35,7 +35,7 @@ for kkk  = 13:13
   %residual( ((kkk-1)*image1Dsize +1):kkk*image1Dsize )= double(currentrawdata(:)) - modelValues(:) ;
   residual    =  double(modelValues(:)) - double(currentrawdata(:)) ;
   residual(workarray==0 ) = 0 ; 
-  residual(workarray==aifLabelValue) = 0 ; 
+  residual(workarray==aifLabelValue) = 0 ;
   %residualtmp = double(currentrawdata(:)) - double(modelValues(:)) ;
   %residual    = residualtmp(workarray~=0 & workarray~=aifLabelValue); 
  
@@ -47,7 +47,6 @@ for kkk  = 13:13
 
   % accumulate jacobian 
   derivValuestmp = (distanceImage.* alphaImage.^-2).* derivImage ;
-  derivValuestmp =  2. * residual.*derivValuestmp(:);
   jacbuildtmp = [1:length(indlabelval)]';
   jacbuildtmptwo =  jacbuildtmp(workarray~=0 & workarray~=aifLabelValue); 
   indlabelvaltmp =  indlabelval(workarray~=0 & workarray~=aifLabelValue); 

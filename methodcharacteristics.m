@@ -101,7 +101,7 @@ mycurrentsoln = zeros(length(uniquelabelsfull),1);
 myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
 
 % solve  'JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ), 'InitDamping', '100'
-opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'on' , 'FinDiffRelStep',1.e-3);
+opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'on' , 'FinDiffRelStep',1.e-4);
 
 [x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
 
