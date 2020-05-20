@@ -7,6 +7,7 @@ InputNRRD    = 'Processed/0001/dynamic.nrrd'
 InputAIFNifti= 'Processed/0001/mask.nii.gz'
 InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
 InputAIFNifti= 'Processed/0001/gmmaif.nii.gz'
+InputAIFNifti= 'Processed/0001/slicgmm.nii.gz'
 InputDistance= 'Processed/0001/sdt.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
@@ -105,46 +106,6 @@ myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,
 opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'off' , 'FinDiffRelStep',1.e-4)
 
 [x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
-
-%% extract AIF derivative info
-%% diffaif  = zeros(size(rawdce,1),length(xroi));
-%% for iii =2:size(rawdce,1)
-%%     diffaif(iii,:)  = (aif(iii,:) - aif(iii-1,:))/deltat(iii);
-%% end  
-%% % for jjj =1:length(xroi)
-%% %     plot(diffaif(:,jjj))
-%% %     hold on
-%% % end
-%% 
-%% %% bolus arrival time (bat) is average max location
-%% [aifmax aifmaxloc] = max(diffaif);
-%% bat = floor(mean(aifmaxloc));
-%% 
-%% %% offset bolus arrival time  by AUC Time
-%% aucmaxid= bat;
-%% while timing(aucmaxid) < (timing(bat)+ AUCTimeInterval )
-%%   aucmaxid = aucmaxid + 1;
-%% end
-%% 
-%% 
-%% disp(sprintf('bat %d, bolus arrival %f, aucmaxid %d, timing(bat)+ AUCTimeInterval %f, length(timing) %d ', bat, timing(bat) ,aucmaxid,timing(bat)+AUCTimeInterval, length(timing) ))
-%% 
-%% %% compute pre bolus average signal
-%% preBOLUS = zeros(npixelx, npixely, npixelz);
-%% for iii = 2:bat
-%%   preBOLUS =  preBOLUS + 0.5*(timing(iii) - timing(iii-1)) * double(squeeze(rawdce(iii,:,:,:) + rawdce(iii-1,:,:,:)));
-%% end
-%% signalmask = preBOLUS >10;
-%% 
-%% %% compute post bolus average signal
-%% pstBOLUS = zeros(npixelx, npixely, npixelz);
-%% for iii = bat+1:aucmaxid
-%%   pstBOLUS =  pstBOLUS + 0.5*(timing(iii) - timing(iii-1)) * double(squeeze(rawdce(iii,:,:,:) + rawdce(iii-1,:,:,:)));
-%% end
-%% 
-%% %% AUC image is the pointwise ratio
-%% aucimage = (pstBOLUS./preBOLUS).*signalmask;
-%% 
 
 
 %% save as nifti

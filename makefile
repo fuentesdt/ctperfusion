@@ -20,11 +20,13 @@ tags:
 Processed/0001/gmmaif.nii.gz: Processed/0001/anatomygmm.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -add -o $@
 Processed/0001/anatomygmm.nii.gz: Processed/0001/dynamic.0013.nii.gz Processed/0001/liver.nii.gz 
-	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[10] -x $(word 2,$^) -a $<  -o $@
+	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[4] -x $(word 2,$^) -a $<  -o $@
 Processed/0001/sdt.nii.gz: Processed/0001/slic.nii.gz
 	c3d -verbose $<  -threshold 1685 1685 1 0 -sdt -o $@
 Processed/0001/liver.nii.gz: Processed/0001/mask.nii.gz
 	c3d $< -thresh 2 2 1 0 -o $@
+Processed/0001/slicgmm.nii.gz: Processed/0001/slic.nii.gz Processed/0001/anatomygmm.nii.gz
+	c3d -verbose $< -as A  $(word 2,$^) -replace 1 0 -binarize  -multiply -push A -thresh 1685 1685 1 0 -add -o $@
 Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -multiply -replace 1685 1 -o $@
 Processed/0001/slic.nii.gz:
