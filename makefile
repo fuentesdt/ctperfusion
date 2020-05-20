@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 ITK_DIR=/rsrch1/ip/dtfuentes/github/ITK/InsightToolkit-5.0.1-install/lib/cmake/ITK-5.1
 ITK_SOURCE=/rsrch1/ip/dtfuentes/github/ITK/InsightToolkit-5.0.1
+ATROPOSCMD=/opt/apps/ANTsR/dev//ANTsR_src/ANTsR/src/ANTS/ANTS-build//bin/Atropos -d 3 -c [3,0.0] 
 DYNAMICDATA =  0001 0002 0003 0004 0005
 setup: $(addprefix Processed/,$(addsuffix /setup,$(DYNAMICDATA))) 
 
@@ -16,10 +17,16 @@ tags:
 .PHONY: tags
 
 
+Processed/0001/gmmaif.nii.gz: Processed/0001/anatomygmm.nii.gz Processed/0001/mask.nii.gz
+	c3d $^ -binarize  -add -o $@
+Processed/0001/anatomygmm.nii.gz: Processed/0001/dynamic.0013.nii.gz Processed/0001/liver.nii.gz 
+	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[10] -x $(word 2,$^) -a $<  -o $@
 Processed/0001/sdt.nii.gz: Processed/0001/slic.nii.gz
-	c3d -verbose $<  -threshold 1685 1685 1 0 -sdt -o $@ 
+	c3d -verbose $<  -threshold 1685 1685 1 0 -sdt -o $@
+Processed/0001/liver.nii.gz: Processed/0001/mask.nii.gz
+	c3d $< -thresh 2 2 1 0 -o $@
 Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
-	c3d $^ -multiply -o $@
+	c3d $^ -binarize  -multiply -replace 1685 1 -o $@
 Processed/0001/slic.nii.gz:
 	./itkSLICImageFilter Processed/0001/dynamic.0033.nii.gz $@ 20 1
 Processed/0001/setup:

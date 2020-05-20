@@ -5,6 +5,8 @@ close all
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 InputNRRD    = 'Processed/0001/dynamic.nrrd'
 InputAIFNifti= 'Processed/0001/mask.nii.gz'
+InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
+InputAIFNifti= 'Processed/0001/gmmaif.nii.gz'
 InputDistance= 'Processed/0001/sdt.nii.gz'
 OutputBase   = 'Processed/0001/output'
 c3dexe       = '/usr/local/bin/c3d'
@@ -15,11 +17,11 @@ disp( ['InputAIFNifti=  ''',InputAIFNifti  ,''';']);
 disp( ['InputDistance=  ''',InputDistance  ,''';']);  
 disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']); 
 
-OutputAUC = [OutputBase,'.roirel.nii.gz'];
-OutputPre = [OutputBase,'.pre.roirel.nii.gz'];
+OutputSln = [OutputBase,'.solution.nii.gz'];
+OutputRsd = [OutputBase,'.residual.nii.gz'];
 OutputPst = [OutputBase,'.pst.roirel.nii.gz'];
-disp( ['OutputAUC=     ''',OutputAUC     ,''';']);      
-disp( ['OutputPre=     ''',OutputPre     ,''';']);      
+disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
+disp( ['OutputSln=     ''',OutputSln     ,''';']);      
 disp( ['OutputPst=     ''',OutputPst     ,''';']);      
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
@@ -85,7 +87,6 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
-
 plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
@@ -101,10 +102,9 @@ mycurrentsoln = zeros(length(uniquelabelsfull),1);
 myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
 
 % solve  'JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ), 'InitDamping', '100'
-opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'on' , 'FinDiffRelStep',1.e-4);
+opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'off' , 'FinDiffRelStep',1.e-4)
 
 [x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
-
 
 %% extract AIF derivative info
 %% diffaif  = zeros(size(rawdce,1),length(xroi));
@@ -145,18 +145,24 @@ opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'J
 %% %% AUC image is the pointwise ratio
 %% aucimage = (pstBOLUS./preBOLUS).*signalmask;
 %% 
-%% %% save as nifti
-%% prenii = make_nii(preBOLUS,[],[],[],'prebolus');
-%% save_nii(prenii,OutputPre) ;
-%% copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputPre ' -copy-transform -o ' OutputPre ];
-%% disp(copyheader ); c3derrmsg = evalc(copyheader);
-%% 
-%% %% save as nifti
-%% pstnii = make_nii(pstBOLUS,[],[],[],'pstbolus');
-%% save_nii(pstnii,OutputPst) ;
-%% copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputPst ' -copy-transform -o ' OutputPst ];
-%% disp(copyheader ); c3derrmsg = evalc(copyheader);
-%% 
+
+
+%% save as nifti
+solnImage = x(indlabelval);
+solnImage = reshape(solnImage, size(aifID));
+solnnii = make_nii(solnImage,[],[],[],'solution');
+save_nii(solnnii,OutputSln) ;
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputSln ' -copy-transform -o ' OutputSln ];
+disp(copyheader ); c3derrmsg = evalc(copyheader);
+
+
+%% save as nifti
+rsdImage = reshape(abs(residual), size(aifID));
+rsdnii = make_nii(rsdImage,[],[],[],'residual');
+save_nii(rsdnii,OutputRsd) ;
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputRsd ' -copy-transform -o ' OutputRsd ];
+disp(copyheader ); c3derrmsg = evalc(copyheader);
+
 %% %% save as nifti
 %% aucnii = make_nii(aucimage,[],[],[],'aucratio');
 %% save_nii(aucnii,OutputAUC) ;
