@@ -88,7 +88,7 @@ for jjj =1:length(xroi)
 end
 
 
-close(1); figure(1);plot( aif(:,1));hold;plot( rawdce(:,290,274,71) ); plot( rawdce(4:34,290,274,71) );
+figure(1);plot( aif(:,1));hold;plot( rawdce(:,290,274,71) ); plot( rawdce(4:34,290,274,71) );
 % sum(abs(aif(:,1) - double(rawdce(:,290,274,71))))
 
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
