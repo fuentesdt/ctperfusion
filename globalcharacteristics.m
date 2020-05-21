@@ -9,7 +9,7 @@ InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
 InputAIFNifti= 'Processed/0001/gmmaif.nii.gz'
 InputAIFNifti= 'Processed/0001/slicgmm.nii.gz'
 InputDistance= 'Processed/0001/sdt.nii.gz'
-OutputBase   = 'Processed/0001/output'
+OutputBase   = 'Processed/0001/'
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
 disp( ['c3dexe=         ''',c3dexe         ,''';']);      
@@ -20,10 +20,8 @@ disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']);
 
 OutputSln = [OutputBase,'.solution.nii.gz'];
 OutputRsd = [OutputBase,'.residual.nii.gz'];
-OutputPst = [OutputBase,'.pst.roirel.nii.gz'];
 disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
 disp( ['OutputSln=     ''',OutputSln     ,''';']);      
-disp( ['OutputPst=     ''',OutputPst     ,''';']);      
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
 
@@ -91,42 +89,31 @@ end
 plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
-% the unique label values form the basis
-[uniquelabelsfull, revlabelval, indlabelval] = unique(aifID);
+% TODO take avg ? 
+modelaif =aif(:,1)
+% global search residual
+residual = zeros(size(rawdce));
+for iii = 1:size(rawdce,1)
+  iii
+  for kkk = 1:size(rawdce,1)
+    residual(iii,:,:,:) = residual(iii,:,:,:) + abs(double(rawdce(kkk,:,:,:)) - modelaif(min(kkk+iii,size(rawdce,1))));
+  end
+end 
 
-% build data structures for jacobian build
-derivaif = [ 0; (aif(2:length(aif(:,1)),1) - aif(1:length(aif(:,1))-1,1))./timing(2:length(timing))'];
+% get global optimim
+[globalmin, globalidx]  = min(residual,[],1) 
 
-% initialize
-x0 = .1*ones(length(uniquelabelsfull),1);
-mycurrentsoln = zeros(length(uniquelabelsfull),1);
-myfunc = @(x)analyticsoln(x,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,aifLabelValue );
-
-% solve  'JacobMult',@(Jinfo,Y,flag)analyticjacmult(Jinfo,Y,flag,timing,rawdce,aifID,distanceImage,indlabelval,aif(:,1),derivaif,mycurrentsoln ), 'InitDamping', '100'
-opts1=  optimset('Algorithm','levenberg-marquardt','display','iter-detailed', 'Jacobian','on', 'Diagnostics','on', 'DerivativeCheck', 'off' , 'FinDiffRelStep',1.e-4)
-
-[x,resnorm,residual,exitflag,output] =  lsqnonlin(myfunc,x0,[],[],opts1);
-
+% compute velocity map
+velocity = 1/deltatmedian * distanceImage.*globalidx.^-1;
 
 %% save as nifti
-solnImage = x(indlabelval);
-solnImage = reshape(solnImage, size(aifID));
-solnnii = make_nii(solnImage,[],[],[],'solution');
+solnnii = make_nii(velocity,[],[],[],'solution');
 save_nii(solnnii,OutputSln) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputSln ' -copy-transform -o ' OutputSln ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
 
-
 %% save as nifti
-rsdImage = reshape(abs(residual), size(aifID));
-rsdnii = make_nii(rsdImage,[],[],[],'residual');
+rsdnii = make_nii(globalmin,[],[],[],'residual');
 save_nii(rsdnii,OutputRsd) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputRsd ' -copy-transform -o ' OutputRsd ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
-
-%% %% save as nifti
-%% aucnii = make_nii(aucimage,[],[],[],'aucratio');
-%% save_nii(aucnii,OutputAUC) ;
-%% copyheader = ['!' c3dexe ' ' InputAIFNifti ' ' OutputAUC ' -copy-transform -o ' OutputAUC ];
-%% disp(copyheader ); c3derrmsg = evalc(copyheader);
-%% disp(['vglrun itksnap -g ', InputNRRD, ' -s ', InputAIFNifti, ' -o ',OutputAUC])
