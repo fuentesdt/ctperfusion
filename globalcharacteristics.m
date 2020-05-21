@@ -87,19 +87,33 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
-plot( aif(:,1));hold; plot( aif(:,2)); plot( aif(:,10));
+
+close(1); figure(1);plot( aif(:,1));hold;plot( rawdce(:,290,274,71) ); plot( rawdce(4:34,290,274,71) );
+% sum(abs(aif(:,1) - double(rawdce(:,290,274,71))))
+
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 
 % TODO take avg ? 
 modelaif =aif(:,1)
 % global search residual
-residual = zeros(size(rawdce));
-for iii = 1:size(rawdce,1)
+rsdsize = size(rawdce);
+rsdsize(1) = 19;
+residual = zeros(rsdsize);
+for iii = 1:rsdsize(1)
   iii
   for kkk = 1:size(rawdce,1)
-    residual(iii,:,:,:) = residual(iii,:,:,:) + abs(double(rawdce(kkk,:,:,:)) - modelaif(min(kkk+iii,size(rawdce,1))));
+    residual(iii,:,:,:) = residual(iii,:,:,:) + abs(double(rawdce(kkk,:,:,:)) - modelaif(max(kkk-iii,1)));
   end
 end 
+
+%% dbg
+%% residual(:,290,274,71)  = 0;
+%% for iii = 1:size(rawdce,1)
+%%   for kkk = 1:size(rawdce,1)
+%%     residual(iii, 290,274,71) = residual(iii, 290,274,71) + abs(double(rawdce(kkk, 290,274,71)) - modelaif(max(kkk-iii,1)));
+%%   end
+%% end 
+%% figure(2); plot( residual(:,290,274,71) );
 
 % get global optimim
 [globalmin, globalidx]  = min(residual,[],1) ;
