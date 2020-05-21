@@ -18,9 +18,9 @@ disp( ['InputAIFNifti=  ''',InputAIFNifti  ,''';']);
 disp( ['InputDistance=  ''',InputDistance  ,''';']);  
 disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']); 
 
-OutputSln = [OutputBase,'.solution.nii.gz'];
-OutputRsd = [OutputBase,'.residual.nii.gz'];
-OutputIdx = [OutputBase,'.globalid.nii.gz'];
+OutputSln = [OutputBase,'solution.nii.gz'];
+OutputRsd = [OutputBase,'residual.nii.gz'];
+OutputIdx = [OutputBase,'globalid.nii.gz'];
 disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
 disp( ['OutputSln=     ''',OutputSln     ,''';']);      
 %% assert floating
@@ -112,7 +112,7 @@ velocity = 1/deltatmedian * distanceImage.*globalidx.^-1;
 %% save as nifti
 idxnii = make_nii(globalidx,[],[],[],'index');
 save_nii(idxnii,OutputIdx) ;
-copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputSln ' -copy-transform -o ' OutputSln ];
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputIdx ' -copy-transform -o ' OutputIdx ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 %% save as nifti
