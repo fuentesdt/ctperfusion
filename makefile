@@ -20,7 +20,7 @@ tags:
 Processed/0001/gmmaif.nii.gz: Processed/0001/anatomygmm.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -add -o $@
 Processed/0001/anatomygmm.nii.gz: Processed/0001/dynamic.0013.nii.gz Processed/0001/liver.nii.gz 
-	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[4] -x $(word 2,$^) -a $<  -o $@
+	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[10] -x $(word 2,$^) -a $<  -o $@
 Processed/0001/sdt.nii.gz: Processed/0001/slic.nii.gz
 	c3d -verbose $<  -threshold 1685 1685 1 0 -sdt -o $@
 Processed/0001/liver.nii.gz: Processed/0001/mask.nii.gz

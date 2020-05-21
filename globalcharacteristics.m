@@ -141,3 +141,5 @@ save_nii(rsdnii,OutputRsd) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputRsd ' -copy-transform -o ' OutputRsd ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
 
+
+%% imagesc(velocity(:,:,75))
