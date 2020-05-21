@@ -20,6 +20,7 @@ disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']);
 
 OutputSln = [OutputBase,'.solution.nii.gz'];
 OutputRsd = [OutputBase,'.residual.nii.gz'];
+OutputIdx = [OutputBase,'.globalid.nii.gz'];
 disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
 disp( ['OutputSln=     ''',OutputSln     ,''';']);      
 %% assert floating
@@ -101,10 +102,18 @@ for iii = 1:size(rawdce,1)
 end 
 
 % get global optimim
-[globalmin, globalidx]  = min(residual,[],1) 
+[globalmin, globalidx]  = min(residual,[],1) ;
+globalidx = squeeze(globalidx);
+globalmin = squeeze(globalmin);
 
 % compute velocity map
 velocity = 1/deltatmedian * distanceImage.*globalidx.^-1;
+
+%% save as nifti
+idxnii = make_nii(globalidx,[],[],[],'index');
+save_nii(idxnii,OutputIdx) ;
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputSln ' -copy-transform -o ' OutputSln ];
+disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 %% save as nifti
 solnnii = make_nii(velocity,[],[],[],'solution');
@@ -117,3 +126,4 @@ rsdnii = make_nii(globalmin,[],[],[],'residual');
 save_nii(rsdnii,OutputRsd) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputRsd ' -copy-transform -o ' OutputRsd ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
+
