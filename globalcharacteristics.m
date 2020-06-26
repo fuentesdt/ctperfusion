@@ -56,7 +56,7 @@ deltatmedian =  median(deltat)
 
 
 %% Load Distance
-disp(['aiflabel = load_untouch_nii(''',InputDistance  ,''');']);
+disp(['distancenii = load_untouch_nii(''',InputDistance  ,''');']);
 distancenii  = load_untouch_nii(InputDistance  );
 distanceImage= distancenii.img;
 
