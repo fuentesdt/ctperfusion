@@ -1,15 +1,20 @@
 clear all 
 close all
+
+%% Load paths.
+if ~isdeployed
+  addpath('./nifti');
+end
+
+for idata = 2:5
+OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
 % input -  raw DCE NRRD, label file for aif, auc time intervale
 % output - nifti auc map
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
-InputNRRD    = 'Processed/0001/dynamic.nrrd'
-InputAIFNifti= 'Processed/0001/mask.nii.gz'
-InputAIFNifti= 'Processed/0001/slicmask.nii.gz'
-InputAIFNifti= 'Processed/0001/gmmaif.nii.gz'
-InputAIFNifti= 'Processed/0001/slicgmm.nii.gz'
-InputDistance= 'Processed/0001/sdt.nii.gz'
-OutputBase   = 'Processed/0001/'
+
+InputNRRD    = [OutputBase,'dynamic.nrrd'];
+InputAIFNifti= [OutputBase,'aif.nii.gz'];
+InputDistance= [OutputBase,'sdt.nii.gz'];
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
 disp( ['c3dexe=         ''',c3dexe         ,''';']);      
@@ -21,15 +26,11 @@ disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']);
 OutputSln = [OutputBase,'solution.nii.gz'];
 OutputRsd = [OutputBase,'residual.nii.gz'];
 OutputIdx = [OutputBase,'globalid.nii.gz'];
+OutputAif = [OutputBase,'aifplot'];
 disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
 disp( ['OutputSln=     ''',OutputSln     ,''';']);      
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
-
-%% Load paths.
-if ~isdeployed
-  addpath('./nifti');
-end
 
 %% Load DCE data
 disp(['[rawdce, dcemeta] =nrrdread(''',InputNRRD,''');']);
@@ -88,7 +89,11 @@ for jjj =1:length(xroi)
 end
 
 
-figure(1);plot( aif(:,1));hold;plot( rawdce(:,290,274,71) ); plot( rawdce(4:34,290,274,71) );
+set(gca,'FontSize',16)
+handle = figure(1);plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-');
+xlabel('time [s]')
+ylabel('intensity [HU]')
+saveas(handle,OutputAif ,'png')
 % sum(abs(aif(:,1) - double(rawdce(:,290,274,71))))
 
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
@@ -143,3 +148,4 @@ disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 
 %% imagesc(velocity(:,:,75))
+end 
