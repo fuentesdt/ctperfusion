@@ -112,9 +112,46 @@ Processed/0004/setup:
 Processed/%/dynamicreg.nrrd: 
 	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.antsintro  -n 0 -s MI -t GR -m 30x90x20 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.antsintro  -n 0 -s MI -t GR -m 30x90x20 > dynamic.$$idfile.log 2>&1;  done
 	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d $(@D)/dynamic.*.antsintro.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
 #cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.0032.nii.gz    -o dynamic.0032.antsintro  -n 0 -s MI -t GR -m 30x90x20 > dynamic.0032.log 2>&1; 
 #for idfile in $(seq -f "%04g" 0 32); do echo $$idfile; done
+
+Processed/%/dynamicinc.nrrd: 
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0001.nii.gz -i dynamic.0000.nii.gz -o inc.0001.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0002.nii.gz -i dynamic.0001.nii.gz -o inc.0002.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0003.nii.gz -i dynamic.0002.nii.gz -o inc.0003.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0004.nii.gz -i dynamic.0003.nii.gz -o inc.0004.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0005.nii.gz -i dynamic.0004.nii.gz -o inc.0005.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0006.nii.gz -i dynamic.0005.nii.gz -o inc.0006.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0007.nii.gz -i dynamic.0006.nii.gz -o inc.0007.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0008.nii.gz -i dynamic.0007.nii.gz -o inc.0008.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0009.nii.gz -i dynamic.0008.nii.gz -o inc.0009.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0010.nii.gz -i dynamic.0009.nii.gz -o inc.0010.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0011.nii.gz -i dynamic.0010.nii.gz -o inc.0011.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0012.nii.gz -i dynamic.0011.nii.gz -o inc.0012.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0013.nii.gz -i dynamic.0012.nii.gz -o inc.0013.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0014.nii.gz -i dynamic.0013.nii.gz -o inc.0014.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0015.nii.gz -i dynamic.0014.nii.gz -o inc.0015.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0016.nii.gz -i dynamic.0015.nii.gz -o inc.0016.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0017.nii.gz -i dynamic.0016.nii.gz -o inc.0017.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0018.nii.gz -i dynamic.0017.nii.gz -o inc.0018.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0019.nii.gz -i dynamic.0018.nii.gz -o inc.0019.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0020.nii.gz -i dynamic.0019.nii.gz -o inc.0020.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0021.nii.gz -i dynamic.0020.nii.gz -o inc.0021.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0022.nii.gz -i dynamic.0021.nii.gz -o inc.0022.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0023.nii.gz -i dynamic.0022.nii.gz -o inc.0023.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0024.nii.gz -i dynamic.0023.nii.gz -o inc.0024.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0025.nii.gz -i dynamic.0024.nii.gz -o inc.0025.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0026.nii.gz -i dynamic.0025.nii.gz -o inc.0026.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0027.nii.gz -i dynamic.0026.nii.gz -o inc.0027.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0028.nii.gz -i dynamic.0027.nii.gz -o inc.0028.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0029.nii.gz -i dynamic.0028.nii.gz -o inc.0029.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0030.nii.gz -i dynamic.0029.nii.gz -o inc.0030.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0031.nii.gz -i dynamic.0030.nii.gz -o inc.0031.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0032.nii.gz -i dynamic.0031.nii.gz -o inc.0032.antsintro -n 0 -s MI -t GR -m 30x90x20
+	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz -i dynamic.0032.nii.gz -o inc.0000.antsintro -n 0 -s MI -t GR -m 30x90x20
+	@echo c3d $(@D)/inc.*.antsintro.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
 Processed/0005/setup:
 	mkdir -p $(@D)

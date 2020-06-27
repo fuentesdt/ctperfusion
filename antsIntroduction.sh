@@ -557,7 +557,7 @@ fi
 reportMappingParameters
 # write config file
 
-MOVINGBASE=` echo ${MOVING} | cut -d '.' -f 1 `
+MOVINGBASE=${OUTPUTNAME}
 
 if [ -f ${MOVINGBASE}.cfg  ] ;
 then
