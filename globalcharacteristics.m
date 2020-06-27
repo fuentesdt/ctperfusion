@@ -6,7 +6,7 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 2:5
+for idata = 5:5
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
 % input -  raw DCE NRRD, label file for aif, auc time intervale
 % output - nifti auc map

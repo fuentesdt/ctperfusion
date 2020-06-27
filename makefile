@@ -27,6 +27,8 @@ Processed/%/viewmask: Processed/%/mask.nii.gz
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
 Processed/%/viewslic: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz
+Processed/%/viewsoln: 
+	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz $(@D)/globalid.nii.gz $(@D)/solution.nii.gz $(@D)/residual.nii.gz
 Processed/%/viewaif: Processed/%/aif.nii.gz
 	$(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamic.nrrd");slicer.util.loadLabelVolume( "$<")' 
 	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
@@ -106,6 +108,13 @@ Processed/0004/setup:
 	ls '/mnt/FUS4/data2/ethompson/CT_Perfusion/ZPAF19L017_Processed/10.31.2019_Processed/24 DynMulti4D  1.5  B20f 16_1-region 5-label.nrrd'
 	ls '/mnt/FUS4/data2/ethompson/CT_Perfusion/ZPAF19L017_Processed/10.31.2019_Processed/24 DynMulti4D  1.5  B20f 16_1-region 6-label.nrrd'
 	ls '/mnt/FUS4/data2/ethompson/CT_Perfusion/ZPAF19L017_Processed/10.31.2019_Processed/24 DynMulti4D  1.5  B20f 16_1-region 9-label.nrrd'
+
+Processed/%/dynamicreg.nrrd: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.antsintro  -n 0 -s MI -t GR -m 30x90x20 > dynamic.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+
+#cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.0032.nii.gz    -o dynamic.0032.antsintro  -n 0 -s MI -t GR -m 30x90x20 > dynamic.0032.log 2>&1; 
+#for idfile in $(seq -f "%04g" 0 32); do echo $$idfile; done
 
 Processed/0005/setup:
 	mkdir -p $(@D)
