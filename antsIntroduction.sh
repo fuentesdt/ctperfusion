@@ -28,7 +28,7 @@ SETPATH
 # Uncomment the line below in case you have not set the ANTSPATH variable in your environment.
 # export ANTSPATH=${ANTSPATH:="$HOME/bin/ants/"} # EDIT THIS
 
-#ANTSPATH=YOURANTSPATH
+ANTSPATH=/opt/apps/ANTS/dev/install/bin/
 if [  ${#ANTSPATH} -le 3 ]
     then
     setPath >&2
