@@ -6,6 +6,7 @@ SLICER=vglrun /opt/apps/slicer/Slicer-4.4.0-linux-amd64/Slicer
 DYNAMICDATA =  0001 0002 0003 0004 0005
 setup: $(addprefix Processed/,$(addsuffix /setup,$(DYNAMICDATA))) 
 slic: $(addprefix Processed/,$(addsuffix /slic.nii.gz,$(DYNAMICDATA))) 
+dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA))) 
 
 all: Makefile
 	make -f Makefile

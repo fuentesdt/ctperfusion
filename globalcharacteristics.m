@@ -36,9 +36,14 @@ disp(['[rawdce, dcemeta] =nrrdread(''',InputNRRD,''');']);
 [rawdce, dcemeta] = nrrdread(InputNRRD);
 
 %% Get Timing Info
-rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
-if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
-  timing = rawtiming * 1.e-3   % convert to seconds 
+if memberID == 'mean'
+   disp('HACK - FIXME - use previous timing ');
+   timing 
+else
+  rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
+  if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
+    timing = rawtiming * 1.e-3   % convert to seconds 
+  end
 end
 
 %% variable spacing
