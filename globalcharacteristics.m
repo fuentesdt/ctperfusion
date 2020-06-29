@@ -6,29 +6,28 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 5:5
+for idata = 1:1
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
+inputfilelist = ['' "mean" ];
+for memberID = inputfilelist 
+
+
+
 % input -  raw DCE NRRD, label file for aif, auc time intervale
 % output - nifti auc map
 %function RelativeAUC( c3dexe, OutputBase, InputNRRD, InputAIFNifti, AUCTimeInterval)
 
-InputNRRD    = [OutputBase,'dynamic.nrrd'];
-InputAIFNifti= [OutputBase,'aif.nii.gz'];
-InputDistance= [OutputBase,'sdt.nii.gz'];
+InputNRRD    = convertStringsToChars(strcat(OutputBase,'dynamic',memberID,'.nrrd'))
+InputAIFNifti= [OutputBase,'aif.nii.gz']
+InputDistance= [OutputBase,'sdt.nii.gz']
 c3dexe       = '/usr/local/bin/c3d'
 AUCTimeInterval = '10'
-disp( ['c3dexe=         ''',c3dexe         ,''';']);      
-disp( ['InputNRRD=      ''',InputNRRD      ,''';']);      
-disp( ['InputAIFNifti=  ''',InputAIFNifti  ,''';']);  
-disp( ['InputDistance=  ''',InputDistance  ,''';']);  
-disp( ['AUCTimeInterval=''',AUCTimeInterval,''';']); 
+%disp( ['InputNRRD=      ''',InputNRRD      ,''';']);      
 
-OutputSln = [OutputBase,'solution.nii.gz'];
-OutputRsd = [OutputBase,'residual.nii.gz'];
-OutputIdx = [OutputBase,'globalid.nii.gz'];
-OutputAif = [OutputBase,'aifplot'];
-disp( ['OutputRsd=     ''',OutputRsd     ,''';']);      
-disp( ['OutputSln=     ''',OutputSln     ,''';']);      
+OutputSln = convertStringsToChars(strcat(OutputBase,memberID,'solution.nii.gz'))
+OutputRsd = convertStringsToChars(strcat(OutputBase,memberID,'residual.nii.gz'))
+OutputIdx = convertStringsToChars(strcat(OutputBase,memberID,'globalid.nii.gz'))
+OutputAif = convertStringsToChars(strcat(OutputBase,memberID,'aifplot'))
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
 
@@ -149,3 +148,4 @@ disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 %% imagesc(velocity(:,:,75))
 end 
+end
