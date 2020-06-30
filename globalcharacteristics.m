@@ -6,7 +6,7 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 1:1
+for idata = 1:5
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
 inputfilelist = ['' "mean" ];
 for memberID = inputfilelist 
