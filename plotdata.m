@@ -3,7 +3,7 @@ clear all
 close all
 
 
-for idata = 1:5
+for idata = 1:1
    OutputBase        = ['Processed/',sprintf('%04d',idata),'/']
    OutputCorrelation = [OutputBase , 'correlation']
    globalid = readtable( [OutputBase,'globalid.csv'])
@@ -22,7 +22,11 @@ for idata = 1:5
    plot(solution.Mean(filterIdx ), myrho* solution.Mean(filterIdx ) ) 
    xlabel('pixelwise avg speed [mm/s]')
    ylabel('super pixel speed [mm/s]')
+   text(8,5,['r = ',sprintf('%3.2f',myrho)])
+   xlim([0 inf])
+   ylim([0 inf])
    saveas(handle,OutputCorrelation ,'png')
    figure(2); plot(globalid.Mean(filterIdx ), meanglobalid.Mean(filterIdx ),'x') 
+
 
 end
