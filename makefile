@@ -90,9 +90,12 @@ Processed/%/dynamicinc.nrrd:
 Processed/%.csv: Processed/%.nii.gz
 	c3d $< $(@D)/slicmask.nii.gz -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),$(<F),slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt > $@
 
-Processed/0001/outline.nii.gz: Processed/0001/tumorroi.nii.gz 
-	c3d -verbose $< -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
+Processed/0001/vesselmask.nii.gz:
+	c3d -verbose $(@D)/dynamic.0033.nii.gz  -thresh 245 inf 1 0 $(@D)/mask.nii.gz -as A -binarize -multiply -o $(@D)/livervessel.nii.gz
+	c3d -verbose $(@D)/livervessel.nii.gz  -replace 1 0 0 1    $(@D)/mask.nii.gz -multiply  $(@D)/livervessel.nii.gz -add -o $@
 
+Processed/0001/outline.nii.gz: 
+	c3d -verbose Processed/0001/vesselmask.nii.gz -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
 
 Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -multiply -replace 1685 1 1710 1 1034 1 1084 1 2286 1 1656 1 -o $@
