@@ -6,7 +6,7 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 1:5
+for idata = 1:1
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
 inputfilelist = ['' "mean" ];
 for memberID = inputfilelist 
@@ -92,11 +92,11 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
-
-set(gca,'FontSize',16)
-handle = figure(1);plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-');
+handle = figure(1);
+set(gca,'fontsize',28)
+plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-');
 xlabel('time [s]')
-ylabel('intensity [HU]')
+ylabel('attenuation [HU]')
 saveas(handle,OutputAif ,'png')
 % sum(abs(aif(:,1) - double(rawdce(:,290,274,71))))
 
