@@ -84,6 +84,7 @@ Processed/%/dynamicinc.nrrd:
 	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0031.nii.gz -i dynamic.0030.nii.gz -o inc.0031.antsintro -n 0 -s MI -t GR -m 30x90x20
 	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0032.nii.gz -i dynamic.0031.nii.gz -o inc.0032.antsintro -n 0 -s MI -t GR -m 30x90x20
 	cd $(@D); ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz -i dynamic.0032.nii.gz -o inc.0000.antsintro -n 0 -s MI -t GR -m 30x90x20
+	for idfile in $$(seq  0 32);do BUILDCMD=''; for idtransform in $$(seq -f "%04g" $$(($$idfile+1)) 33);do BUILDCMD="inc.$$idtransform.antsintroWarp.nii.gz inc.$$idtransform.antsintroAffine.txt $$BUILDCMD "; done; echo /opt/apps/ANTS/dev/install/bin/WarpImageMultiTransform 3 dynamic.$$(printf %04d $$idfile).nii.gz inc.$$(printf %04d $$idfile).antsintrodeformed.nii.gz $$BUILDCMD -R dynamic.0033.nii.gz ; done
 	@echo c3d $(@D)/inc.*.antsintro.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
 
