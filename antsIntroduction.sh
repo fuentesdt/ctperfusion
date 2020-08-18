@@ -505,6 +505,12 @@ then
 TRANSFORMATION=SyN[0.10]
 REGULARIZATION=Gauss[3,0]
 
+elif [ "${TRANSFORMATIONTYPE}" == "G4" ]
+then
+# Mapping Parameters for the greedy gradient descent (fast) version of SyN -- only needs GradientStepLength
+TRANSFORMATION=SyN[0.40]
+REGULARIZATION=Gauss[3,0]
+
 elif [ "${TRANSFORMATIONTYPE}" == "GR_Constrained" ]
 then
 # Mapping Parameters for the greedy gradient descent (fast) version of SyN -- only needs GradientStepLength

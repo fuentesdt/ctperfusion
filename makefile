@@ -43,22 +43,49 @@ Processed/%/dynamicmean.nhdr:
 	for idfile in $$(seq -f "%04g" 0 33); do  echo python slicnormalization.py --imagefile=$(@D)/dynamic.$$idfile.nii.gz; python slicnormalization.py --imagefile=$(@D)/dynamic.$$idfile.nii.gz;done
 	c3d $(@D)/meandynamic.*.nii.gz -omc $@
 Processed/%/dynamicSY.nhdr: 
-	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.SY  -n 0 -s MI -t SY -m 60x150x40 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.SY  -n 0 -s MI -t SY -m 60x150x40 > dynamicSY.$$idfile.log 2>&1;  done
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.SY  -n 0 -s MI -t SY -m 60x150x40 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.SY  -n 0 -s MI -t SY -m 60x150x40 > dynamicSY.$$idfile.log 2>&1;  done
 	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
 	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
+tuning: Processed/0004/dynamicG1C3.nhdr  Processed/0004/dynamicG1C7.nhdr  Processed/0004/dynamicGRC3.nhdr  Processed/0004/dynamicGRC7.nhdr  Processed/0004/dynamicGRCC.nhdr  Processed/0004/dynamicG4C3.nhdr  Processed/0004/dynamicG4C7.nhdr  Processed/0004/dynamicG4CC.nhdr  
+
 Processed/%/dynamicG1C3.nhdr: 
-	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C3  -n 0 -s C3 -t G1 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C3  -n 0 -s C3 -t G1 -m 40x100x30 > dynamicG1C3.$$idfile.log 2>&1;  done
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C3  -n 0 -s C3 -t G1 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C3  -n 0 -s C3 -t G1 -m 40x100x30 > dynamicG1C3.$$idfile.log 2>&1;  done
 	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
 	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
 Processed/%/dynamicG1C7.nhdr: 
-	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C7  -n 0 -s C7 -t G1 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C7  -n 0 -s C7 -t G1 -m 40x100x30 > dynamicG1C7.$$idfile.log 2>&1;  done
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C7  -n 0 -s C7 -t G1 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G1C7  -n 0 -s C7 -t G1 -m 40x100x30 > dynamicG1C7.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
+Processed/%/dynamicGRC3.nhdr: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRC3  -n 0 -s C3 -t GR -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRC3  -n 0 -s C3 -t GR -m 40x100x30 > dynamicGRC3.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
+Processed/%/dynamicGRC7.nhdr: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRC7  -n 0 -s C7 -t GR -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRC7  -n 0 -s C7 -t GR -m 40x100x30 > dynamicGRC7.$$idfile.log 2>&1;  done
 	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
 	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
 Processed/%/dynamicGRCC.nhdr: 
-	cd $(@D); for idfile in $$(seq -f "%04g" 0 32); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRCC  -n 0 -s CC -t GR -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRCC  -n 0 -s CC -t GR -m 40x100x30 > dynamicGRCC.$$idfile.log 2>&1;  done
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRCC  -n 0 -s CC -t GR -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.GRCC  -n 0 -s CC -t GR -m 40x100x30 > dynamicGRCC.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
+Processed/%/dynamicG4C3.nhdr: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4C3  -n 0 -s C3 -t G4 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4C3  -n 0 -s C3 -t G4 -m 40x100x30 > dynamicG4C3.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
+Processed/%/dynamicG4C7.nhdr: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4C7  -n 0 -s C7 -t G4 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4C7  -n 0 -s C7 -t G4 -m 40x100x30 > dynamicG4C7.$$idfile.log 2>&1;  done
+	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
+	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
+Processed/%/dynamicG4CC.nhdr: 
+	cd $(@D); for idfile in $$(seq -f "%04g" 0 0); do echo ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4CC  -n 0 -s CC -t G4 -m 40x100x30 ;  ../../antsIntroduction.sh -d 3 -r dynamic.0033.nii.gz  -i dynamic.$$idfile.nii.gz    -o dynamic.$$idfile.G4CC  -n 0 -s CC -t G4 -m 40x100x30 > dynamicGRCC.$$idfile.log 2>&1;  done
 	@echo vglrun itksnap -g $(word 2,$^) -o $(basename $(basename $@)).antsintrodeformed.nii.gz
 	@echo c3d -verbose $(@D)/dynamic.*.antsintrodeformed.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
