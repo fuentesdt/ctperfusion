@@ -499,6 +499,12 @@ then
 TRANSFORMATION=SyN[0.25]
 REGULARIZATION=Gauss[3,0]
 
+elif [ "${TRANSFORMATIONTYPE}" == "G1" ]
+then
+# Mapping Parameters for the greedy gradient descent (fast) version of SyN -- only needs GradientStepLength
+TRANSFORMATION=SyN[0.10]
+REGULARIZATION=Gauss[3,0]
+
 elif [ "${TRANSFORMATIONTYPE}" == "GR_Constrained" ]
 then
 # Mapping Parameters for the greedy gradient descent (fast) version of SyN -- only needs GradientStepLength
@@ -535,6 +541,12 @@ then
 # Mapping Parameters
 METRIC=CC[
 METRICPARAMS=1,5]
+
+elif [ "${METRICTYPE}" == "C7"  ]
+then
+# Mapping Parameters
+METRIC=CC[
+METRICPARAMS=1,7]
 
 elif [ "${METRICTYPE}" == "MI" ]
 then
