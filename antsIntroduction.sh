@@ -548,6 +548,12 @@ then
 METRIC=CC[
 METRICPARAMS=1,7]
 
+elif [ "${METRICTYPE}" == "C3"  ]
+then
+# Mapping Parameters
+METRIC=CC[
+METRICPARAMS=1,3]
+
 elif [ "${METRICTYPE}" == "MI" ]
 then
 # Mapping Parameters
