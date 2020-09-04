@@ -7,6 +7,7 @@ DYNAMICDATA =  0001 0002 0003 0004 0005
 setup: $(addprefix Processed/,$(addsuffix /setup,$(DYNAMICDATA))) 
 slic: $(addprefix Processed/,$(addsuffix /slic.nii.gz,$(DYNAMICDATA))) 
 roi: $(addprefix Processed/,$(addsuffix /roi.nii.gz,$(DYNAMICDATA))) 
+anatomymask: $(addprefix Processed/,$(addsuffix /anatomymask.nii.gz,$(DYNAMICDATA))) 
 dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
@@ -26,11 +27,19 @@ tags:
 # https://www.gnu.org/software/make/manual/html_node/Chained-Rules.html#Chained-Rules
 .SECONDARY: 
 
+Processed/0001/table.nii.gz: 
+	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 100 465 1 0  -o $(@D)/table.nii.gz
+Processed/0002/table.nii.gz: 
+	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 100 460 1 0  -o $(@D)/table.nii.gz
+Processed/0003/table.nii.gz: 
+	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 100 400 1 0  -o $(@D)/table.nii.gz
 Processed/0004/table.nii.gz: 
-	echo c3d -verbose $(@D)/dynamic.0000.nii.gz -thresh -300 -200 1 0 -comp -thresh 1 1 1 0 -dilate 1 10x10x10  -erode 1 10x10x10   -o $(@D)/table.nii.gz
-	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 80 360 1 0  -o $(@D)/table.nii.gz
+	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 100 360 1 0  -o $(@D)/table.nii.gz
+Processed/0005/table.nii.gz: 
+	c3d -verbose $(@D)/dynamic.0000.nii.gz -cmv -pop -thresh 100 385 1 0  -o $(@D)/table.nii.gz
 Processed/%/anatomymask.nii.gz: Processed/%/table.nii.gz
 	c3d -verbose $(@D)/dynamic.0000.nii.gz -thresh -900 inf 1 0  $(@D)/dynamic.0033.nii.gz  -thresh -900 inf 1 0 -add -binarize -erode 1 10x10x10vox -dilate 1 20x20x20vox  $(@D)/table.nii.gz -multiply -type uchar -o $@
+	c3d $@ -comp -thresh 1 1 1 0 -type uchar -o  $@
 	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $@
 
 Processed/%/roi.nii.gz: Processed/%/mask.nii.gz
@@ -88,14 +97,41 @@ Processed/%/dynamicG1C4dbginc.0000.nii.gz:
 
 Processed/%/dynamicG1C4inc.0000.nii.gz:
 	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=28; for idfile in $$(seq  -f "%04g"  32 -1 0 ); do echo bsub  -env "all" -J $(subst /,,$*)$$idfile -cwd $(CLUSTERDIR) -n 28 -W 01:25 -q short -M 128 -R rusage[mem=128] -o  $(basename $(basename $(basename $@))).$$idfile.log /risapps/rhel7/ANTs/20200622/bin/antsRegistration --verbose 1 --dimensionality 3 --float 0 --collapse-output-transforms 1 --output [$(basename $(basename $(basename $@))).$$idfile,$(basename $(basename $(basename $@))).$$idfile.nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [ 0.005,0.995 ] -x [$(@D)/anatomymask.nii.gz,$(@D)/anatomymask.nii.gz] --transform Rigid[ 0.1 ] --metric MI[ $(@D)/dynamic.$$( printf  "%04d" $$( expr $$idfile + 1 ) ).nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform Affine[ 0.1 ] --metric MI[ $(@D)/dynamic.$$( printf  "%04d" $$( expr $$idfile + 1 ) ).nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-5,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform SyN[ 0.1,3,0 ] --metric CC[  $(@D)/dynamic.$$( printf  "%04d" $$( expr $$idfile + 1 ) ).nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,4 ] --convergence [ 100x70x50x30,1e-4,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox ; done
-	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=28; for idfile in $$(seq  0 31);do BUILDCMD=''; for idtransform in $$(seq  $$idfile 32);do BUILDCMD="-r $(basename $(basename $(basename $@))).$$( printf  "%04d" $$idtransform )1Warp.nii.gz -r $(basename $(basename $(basename $@))).$$( printf  "%04d" $$idtransform )0GenericAffine.mat  $$BUILDCMD "; done;  echo bsub  -env "all" -J $(subst /,,$*)$$( printf "%04d" $$idfile) -cwd $(CLUSTERDIR) -n 28 -W 01:25 -q short -M 128 -R rusage[mem=128] -o  $(basename $(basename $(basename $@)))sum.$$( printf "%04d" $$idfile).log /risapps/rhel7/ANTs/20200622/bin/antsRegistration --verbose 1 --dimensionality 3 --float 0 --collapse-output-transforms 1 --output [$(basename $(basename $(basename $@)))sum.$$( printf "%04d" $$idfile),$(basename $(basename $(basename $@)))sum.$$( printf "%04d" $$idfile).nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [ 0.005,0.995 ] -x [$(@D)/anatomymask.nii.gz,$(@D)/anatomymask.nii.gz] $$BUILDCMD --transform Rigid[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform Affine[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-5,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform SyN[ 0.1,3,0 ] --metric CC[  $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,4 ] --convergence [ 100x70x50x30,1e-4,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox ; done
+Processed/%/dynamicG1C4incsum.0000.nii.gz: Processed/%/dynamicG1C4inc.0000.nii.gz
+	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=28; for idfile in $$(seq  0 31);do BUILDCMD=''; for idtransform in $$(seq  $$idfile 32);do BUILDCMD="-r $(basename $(basename $(basename $<))).$$( printf  "%04d" $$idtransform )1Warp.nii.gz -r $(basename $(basename $(basename $<))).$$( printf  "%04d" $$idtransform )0GenericAffine.mat  $$BUILDCMD "; done; echo  bsub  -env "all" -J $(subst /,,$*)$$( printf "%04d" $$idfile) -cwd $(CLUSTERDIR) -n 28 -W 01:25 -q short -M 128 -R rusage[mem=128] -o  $(basename $(basename $(basename $@))).$$( printf "%04d" $$idfile).log /risapps/rhel7/ANTs/20200622/bin/antsRegistration --verbose 1 --dimensionality 3 --float 0 --collapse-output-transforms 1 --output [$(basename $(basename $(basename $@))).$$( printf "%04d" $$idfile),$(basename $(basename $(basename $@))).$$( printf "%04d" $$idfile).nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [ 0.005,0.995 ] -x [$(@D)/anatomymask.nii.gz,$(@D)/anatomymask.nii.gz] $$BUILDCMD --transform Rigid[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform Affine[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-5,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform SyN[ 0.1,3,0 ] --metric CC[  $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$( printf "%04d" $$idfile).nii.gz,1,4 ] --convergence [ 100x70x50x30,1e-4,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox ; done
 
 Processed/%/dynamicG1C4anatomymask.0000.nii.gz:
 	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=28; for idfile in $$(seq  -f "%04g"  32 -1 0 ); do if [ $$idfile -lt 0032 ] ; then  FIXEDTRANSFORM="-q [$(basename $(basename $(basename $@))).$$( printf  "%04d" $$( expr $$idfile + 1 ) )0GenericAffine.mat,1] -q $(basename $(basename $(basename $@))).$$( printf  "%04d" $$( expr $$idfile + 1 ) )1InverseWarp.nii.gz" ; fi ;  bsub  -Ip -env "all" -J $(subst /,,$*)$$idfile -cwd $(CLUSTERDIR) -n 28 -W 01:25 -q short -M 128 -R rusage[mem=128] -o  $(basename $(basename $(basename $@))).$$idfile.log /risapps/rhel7/ANTs/20200622/bin/antsRegistration --verbose 1 --dimensionality 3 --float 0 --collapse-output-transforms 1 --output [$(basename $(basename $(basename $@))).$$idfile,$(basename $(basename $(basename $@))).$$idfile.nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [ 0.005,0.995 ] -x [$(@D)/anatomymask.nii.gz,$(@D)/anatomymask.nii.gz] $$FIXEDTRANSFORM --transform Rigid[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform Affine[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-5,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform SyN[ 0.1,3,0 ] --metric CC[  $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,4 ] --convergence [ 100x70x50x20,1e-4,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox ; done
 
+Processed/%/dynamicG1C4anatomymaskmip.nii.gz: 
+	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -accum -max -endaccum -o $@
+Processed/%/dynamicG1C4anatomymasksubtract.nii.gz: Processed/%/dynamicG1C4anatomymaskmip.nii.gz
+	c3d -verbose $<  $(@D)/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o $@
+Processed/%/vesselness.1.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
+	c3d -verbose $<  -hessobj 1 $(word 2,$(subst ., ,$(@F))) $(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+Processed/%/vesselness.2.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
+	c3d -verbose $<  -hessobj 1 $(word 2,$(subst ., ,$(@F))) $(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+Processed/%/vesselness.3.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
+	c3d -verbose $<  -hessobj 2 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+Processed/%/vesselness.5.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
+	c3d -verbose $<  -hessobj 2 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+Processed/%/otsu.1.nii.gz: Processed/%/vesselness.1.nii.gz
+	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
+Processed/%/otsu.2.nii.gz: Processed/%/vesselness.2.nii.gz
+	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
+Processed/%/otsu.3.nii.gz: Processed/%/vesselness.3.nii.gz
+	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
+Processed/%/otsu.5.nii.gz: Processed/%/vesselness.5.nii.gz
+	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
+#echo c3d -verbose $^  -accum -add -endaccum -binarize -comp -thresh 1 50 1 0  -dilate 1 2x2x2vox  -erode 1 2x2x2vox -comp -o $@
+Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  Processed/%/otsu.3.nii.gz Processed/%/otsu.5.nii.gz
+	c3d -verbose $^  -accum -add -endaccum -binarize -o $@
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymaskmip.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksubtract.nii.gz $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 Processed/%/dynamicG1C4anatomymask.nhdr: 
-	c3d -verbose $(@D)/dynamic.G1C4deformedanatomymask.00??.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
+
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
+
 Processed/%/dynamicG1C4.0032.G1C4deformed.nii.gz:
 	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=28; for idfile in $$(seq -f "%04g" 0 32); do bsub  -env "all" -J $(subst /,,$*)$$idfile -cwd $(CLUSTERDIR) -n 28 -W 01:25 -q short -M 128 -R rusage[mem=128] -o  $(basename $@).$$idfile.log /risapps/rhel7/ANTs/20200622/bin/antsRegistration --verbose 1 --dimensionality 3 --float 0 --collapse-output-transforms 1 --output [$(basename $@).$$idfile,$(@D)/dynamic.$$idfile.G1C4deformed.nii.gz] --interpolation Linear --use-histogram-matching 0 --winsorize-image-intensities [ 0.005,0.995 ] -x [$(@D)/roi.nii.gz,$(@D)/roi.nii.gz] -r [ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1] --transform Rigid[ 0.1 ] --metric MI[ $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform Affine[ 0.1 ] --metric MI[  $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,32,Regular,0.25 ] --convergence [ 1000x500x250x100,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox --transform SyN[ 0.1,3,0 ] --metric CC[  $(@D)/dynamic.0033.nii.gz,$(@D)/dynamic.$$idfile.nii.gz,1,4 ] --convergence [ 100x70x50x20,1e-6,10 ] --shrink-factors 8x4x2x1 --smoothing-sigmas 3x2x1x0vox ;done 
 Processed/%/dynamicG1C4.nhdr: 
