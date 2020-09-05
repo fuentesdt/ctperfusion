@@ -107,18 +107,27 @@ Processed/%/dynamicG1C4anatomymask.0000.nii.gz:
 
 Processed/%/dynamicG1C4anatomymaskmip.nii.gz: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -accum -max -endaccum -o $@
+	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -rank -oo $(@D)/rank.%04d.nii.gz
+	BUILDCMD='';for idfile in $$(seq  0 33);do  BUILDCMD="$$BUILDCMD $(@D)/rank.$$(printf %04d $$idfile).nii.gz -thresh 1 1 $$idfile 0"; done; c3d -verbose $$BUILDCMD -accum -add -endaccum -o $(@D)/mipindex.nii.gz
+	
 Processed/%/dynamicG1C4anatomymasksubtract.nii.gz: Processed/%/dynamicG1C4anatomymaskmip.nii.gz
 	c3d -verbose $<  $(@D)/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o $@
-Processed/%/vesselness.1.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
-	c3d -verbose $<  -hessobj 1 $(word 2,$(subst ., ,$(@F))) $(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+Processed/%/vesselness.1.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz Processed/%/otsu.2.nii.gz
+	c2d -verbose $(@D)/slice*.nii.gz -foreach -hessobj 1 $(word 2,$(subst ., ,$(@F))) $(word 2,$(subst ., ,$(@F))) -endfor -oo $(@D)/vesselnessslice%04d.nii.gz
+	c3d -verbose $(@D)/vesselnessslice*.nii.gz -tile z -o $@
+	c3d -verbose $(word 2,$^) $@ -copy-transform $(word 2,$^) -multiply $(word 3,$^) -replace 1 0 0 1 -multiply -o $@
 Processed/%/vesselness.2.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
 	c3d -verbose $<  -hessobj 1 $(word 2,$(subst ., ,$(@F))) $(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
-Processed/%/vesselness.3.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
-	c3d -verbose $<  -hessobj 2 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
-Processed/%/vesselness.5.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz
-	c3d -verbose $<  -hessobj 2 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) $(word 2,$^) -multiply -o $@
+	c3d -verbose $< -slice z 0:-1 -oo $(@D)/slice%04d.nii.gz
+Processed/%/vesselness.3.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz Processed/%/otsu.2.nii.gz
+	c2d -verbose $(@D)/slice*.nii.gz -foreach -hessobj 1 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) -endfor -oo $(@D)/vesselnessslice%04d.nii.gz
+	c3d -verbose $(word 2,$^) $(@D)/vesselnessslice*.nii.gz -tile z -copy-transform $(word 2,$^) -multiply $(word 3,$^) -replace 1 0 0 1 -multiply -o $@
+Processed/%/vesselness.5.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz Processed/%/anatomymask.nii.gz Processed/%/otsu.2.nii.gz
+	c2d -verbose $(@D)/slice*.nii.gz -foreach -hessobj 1 .$(word 2,$(subst ., ,$(@F))) .$(word 2,$(subst ., ,$(@F))) -endfor -oo $(@D)/vesselnessslice%04d.nii.gz
+	c3d -verbose $(word 2,$^) $(@D)/vesselnessslice*.nii.gz -tile z -copy-transform $(word 2,$^) -multiply $(word 3,$^) -replace 1 0 0 1 -multiply -o $@
 Processed/%/otsu.1.nii.gz: Processed/%/vesselness.1.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
+	c3d -verbose $@ $(@D)/mask.nii.gz -binarize -erode 1 2x2x2vox -multiply -o $@
 Processed/%/otsu.2.nii.gz: Processed/%/vesselness.2.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
 Processed/%/otsu.3.nii.gz: Processed/%/vesselness.3.nii.gz
@@ -126,12 +135,14 @@ Processed/%/otsu.3.nii.gz: Processed/%/vesselness.3.nii.gz
 Processed/%/otsu.5.nii.gz: Processed/%/vesselness.5.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
 #echo c3d -verbose $^  -accum -add -endaccum -binarize -comp -thresh 1 50 1 0  -dilate 1 2x2x2vox  -erode 1 2x2x2vox -comp -o $@
-Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  Processed/%/otsu.3.nii.gz Processed/%/otsu.5.nii.gz
+Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz 
 	c3d -verbose $^  -accum -add -endaccum -binarize -o $@
 	vglrun itksnap -g $(@D)/dynamicG1C4anatomymaskmip.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksubtract.nii.gz $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 Processed/%/dynamicG1C4anatomymask.nhdr: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
-
+	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
+Processed/%/dynamicG1C4anatomymasksub.nhdr: 
+	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
 
 Processed/%/dynamicG1C4.0032.G1C4deformed.nii.gz:
