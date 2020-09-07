@@ -2,6 +2,7 @@ clear all
 close all
 
 % vglrun itksnap -g Processed/0004/dynamicG1C4anatomymasksub.nii.gz -s Processed/0004/hepaticarterycenterline.nii.gz -o Processed/0004/hepaticarterydistance.nii.gz
+% vglrun itksnap -g Processed/0004/dynamicG1C4anatomymasksubtract.nii.gz -s Processed/0004/hepaticartery.nii.gz
 % c3d  Processed/0004/hepaticarterydistance.nii.gz Processed/0004/hepaticarterycenterline.nii.gz -lstat
 volimage    = niftiread('Processed/0004/dynamicG1C4anatomymasksub.nii.gz');
 volimage    = squeeze(volimage);
@@ -31,5 +32,5 @@ for iii=2:100:size(centerline,2)
 plot(centerline(:,iii));
 end
 
-% plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
+% close(2); figure(2); plot(squeeze(volimage(272,262,72,: )));  hold; plot(squeeze(volimage(193,277,23,: ))); plot(squeeze(volimage(174,251,12,: )));plot(squeeze(volimage(259,188,67,: )));
 

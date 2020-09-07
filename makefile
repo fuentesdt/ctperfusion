@@ -145,7 +145,7 @@ Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  
 Processed/0004/portalvein.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
 Processed/0004/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 11 13 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
 Processed/%/hepaticarterycenterline.nii.gz: Processed/%/hepaticartery.nii.gz
 	./ThinImage $< $(@D)/hepaticarterythin.nii.gz
 	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/hepaticarterythin.nii.gz -binarize -add -o $@
