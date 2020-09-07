@@ -24,6 +24,7 @@ add_executable(ImageReadWrite     ImageReadWrite.cxx )
 add_executable(ConnectedThresholdImageFilter ConnectedThresholdImageFilter.cxx )
 add_executable(ConvertImageWithLabelsToShapeLabelMap ConvertImageWithLabelsToShapeLabelMap.cxx )
 add_executable(ShapeAttributesForBinaryImage ShapeAttributesForBinaryImage.cxx )
+add_executable(ThinImage  ThinImage.cxx )
 
 
 target_link_libraries(itkSLICImageFilter  ${ITK_LIBRARIES})
@@ -31,4 +32,5 @@ target_link_libraries(ImageReadWrite      ${ITK_LIBRARIES})
 target_link_libraries(ConnectedThresholdImageFilter ${ITK_LIBRARIES})
 target_link_libraries(ConvertImageWithLabelsToShapeLabelMap ${ITK_LIBRARIES})
 target_link_libraries(ShapeAttributesForBinaryImage ${ITK_LIBRARIES})
+target_link_libraries(ThinImage  ${ITK_LIBRARIES})
 

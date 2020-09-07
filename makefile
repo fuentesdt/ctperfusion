@@ -114,7 +114,7 @@ Processed/%/dynamicG1C4anatomymaskmip.nii.gz:
 	BUILDCMD='';for idfile in $$(seq  0 33);do  BUILDCMD="$$BUILDCMD $(@D)/rank.$$(printf %04d $$idfile).nii.gz -thresh 1 1 $$idfile 0"; done; c3d -verbose $$BUILDCMD -accum -add -endaccum -o $(@D)/mipindex.nii.gz
 	
 Processed/0004/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0004/dynamicG1C4anatomymasksubtract.nii.gz
-	c3d -verbose $<  -theshold -inf 95% 1 0
+	c3d -verbose $<  -threshold -inf 95% 1 0
 	c3d -verbose $<  -scale -1 -shift 158.574 -scale 1 -exp -shift 1. -reciprocal  -o $@
 	c3d -verbose $< -slice z 0:-1 -oo $(@D)/slice%04d.nii.gz
 Processed/%/dynamicG1C4anatomymasksubtract.nii.gz: Processed/%/dynamicG1C4anatomymaskmip.nii.gz
@@ -144,10 +144,16 @@ Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 Processed/0004/portalvein.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 Processed/0004/hepaticartery.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 11 13 
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
+Processed/%/hepaticarterycenterline.nii.gz: Processed/%/hepaticartery.nii.gz
+	./ThinImage $< $(@D)/hepaticarterythin.nii.gz
+	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/hepaticarterythin.nii.gz -binarize -add -o $@
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
+Processed/%/hepaticarterydistance.nii.gz: Processed/%/hepaticarterycenterline.nii.gz
+	c3d $< -thresh 3 3 1 0 -sdt -o $@
+	c3d $@ $< -lstat
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@  -s $< 
 Processed/%/dynamicG1C4anatomymask.nhdr: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
