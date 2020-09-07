@@ -154,10 +154,10 @@ Processed/%/hepaticarterydistance.nii.gz: Processed/%/hepaticarterycenterline.ni
 	c3d $< -thresh 3 3 1 0 -sdt -o $@
 	c3d $@ $< -lstat
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@  -s $< 
-Processed/%/dynamicG1C4anatomymask.nhdr: 
+Processed/%/dynamicG1C4anatomymask.nii.gz: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
-Processed/%/dynamicG1C4anatomymasksub.nhdr: 
+Processed/%/dynamicG1C4anatomymasksub.nii.gz: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
 
