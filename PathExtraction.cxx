@@ -81,7 +81,7 @@ example_gradientdescent(int argc, char * argv[])
     std::cout << indexway << std::endl;
     std::cout << way1 << std::endl;
    }
-  speed->DisconnectPipeline();
+  //speed->DisconnectPipeline();
 
   // Create interpolator
   using InterpolatorType = itk::LinearInterpolateImageFunction<ImageType, CoordRepType>;
@@ -182,7 +182,14 @@ example_gradientdescent(int argc, char * argv[])
     }
     for (unsigned int i = 0; i < vertexList->Size(); ++i)
     {
-      std::cout << "MeshPoints: " << vertexList->GetElement(i) << std::endl;
+      //std::cout << "MeshPoints: " << vertexList->GetElement(i) << std::endl;
+      ImageType::IndexType indexout;
+      PathFilterType::PointType pointout;
+      indexout[0]   = vertexList->GetElement(i)[0];
+      indexout[1]   = vertexList->GetElement(i)[1];
+      indexout[2]   = vertexList->GetElement(i)[2];
+      speed->TransformIndexToPhysicalPoint(indexout,pointout );
+      std::cout << "MeshPoints: " << pointout << std::endl;
     }
  
 
