@@ -43,6 +43,30 @@ example_gradientdescent(int argc, char * argv[])
   reader->SetFileName(speedFileName);
   reader->Update();
   ImageType::Pointer speed = reader->GetOutput();
+
+  // Setup path points
+  PathFilterType::PointType start, end, way1;
+  ImageType::IndexType indexstart,indexend;
+  indexstart[0] = 272;
+  indexstart[1] = 262;
+  indexstart[2] = 72;
+  indexend[0] =174;
+  indexend[1] =251;
+  indexend[2] =12;
+  way1[0] =174;
+  way1[1] =251;
+  way1[2] =12;
+
+
+  speed->TransformIndexToPhysicalPoint( indexstart, start);
+  speed->TransformIndexToPhysicalPoint( indexend, end);
+  
+  std::cout << indexstart << std::endl;
+  std::cout << start << std::endl;
+  std::cout << indexend << std::endl;
+  std::cout << end << std::endl;
+  std::cout << speed->TransformPhysicalPointToIndex( way1) << std::endl;
+
   speed->DisconnectPipeline();
 
   // Create interpolator
@@ -54,33 +78,32 @@ example_gradientdescent(int argc, char * argv[])
   cost->SetInterpolator(interp);
 
   // Create optimizer
-  using OptimizerType = itk::GradientDescentOptimizer;
+  //using OptimizerType = itk::GradientDescentOptimizer;
+  using OptimizerType = itk::IterateNeighborhoodOptimizer;
   OptimizerType::Pointer optimizer = OptimizerType::New();
-  optimizer->SetNumberOfIterations(1000);
+  //optimizer->SetNumberOfIterations(1000);
+  using NeighborhoodSizeType = itk::Array<PixelType>;
+  NeighborhoodSizeType myradius(3);
+  myradius[0]=2;
+  myradius[1]=2;
+  myradius[2]=2;
+  optimizer->SetNeighborhoodSize(myradius);
 
   // Create path filter
   PathFilterType::Pointer pathFilter = PathFilterType::New();
   pathFilter->SetInput(speed);
   pathFilter->SetCostFunction(cost);
   pathFilter->SetOptimizer(optimizer);
-  pathFilter->SetTerminationValue(2.0);
-
-  // Setup path points
-  PathFilterType::PointType start, end, way1;
-
-  start[0] = 10;
-  start[1] = 100;
-  end[0] = 100;
-  end[1] = 10;
-  way1[0] = 10;
-  way1[1] = 10;
+  PixelType TerminationValue = std::stod(argv[4]);
+  std::cout << TerminationValue << std::endl;
+  pathFilter->SetTerminationValue(TerminationValue );
 
   // Add path information
   using PathInformationType = PathFilterType::PathInformationType;
   PathInformationType::Pointer info = PathInformationType::New();
   info->SetStartPoint(start);
   info->SetEndPoint(end);
-  info->AddWayPoint(way1);
+  //info->AddWayPoint(way1);
   pathFilter->AddPathInformation(info);
 
   // Compute the path
@@ -99,13 +122,19 @@ example_gradientdescent(int argc, char * argv[])
   {
     // Get the path
     PathType::Pointer path = pathFilter->GetOutput(i);
+    const PathType::VertexListType * vertexList = path->GetVertexList();
 
     // Check path is valid
-    if (path->GetVertexList()->Size() == 0)
+    if (vertexList->Size() == 0)
     {
       std::cout << "WARNING: Path " << (i + 1) << " contains no points!" << std::endl;
       continue;
     }
+    for (unsigned int i = 0; i < vertexList->Size(); ++i)
+    {
+      std::cout << vertexList->GetElement(i) << std::endl;
+    }
+ 
 
     // Iterate path and convert to image
     PathIteratorType it(output, path);
@@ -174,7 +203,7 @@ example_regularstepgradientdescent(int argc, char * argv[])
   pathFilter->SetInput(speed);
   pathFilter->SetCostFunction(cost);
   pathFilter->SetOptimizer(optimizer);
-  pathFilter->SetTerminationValue(2.0);
+  pathFilter->SetTerminationValue(std::stod(argv[4]));
 
   // Setup path points
   PathFilterType::PointType start, end, way1;
