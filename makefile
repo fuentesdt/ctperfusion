@@ -151,9 +151,13 @@ Processed/%/hepaticarterycenterline.nii.gz: Processed/%/hepaticartery.nii.gz
 	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/hepaticarterythin.nii.gz -binarize -add -o $@
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 Processed/%/hepaticarterydistance.nii.gz: Processed/%/hepaticarterycenterline.nii.gz
-	c3d $< -thresh 3 3 1 0 -sdt -o $@
+	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
 	c3d $@ $< -lstat
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@  -s $< 
+Processed/%/hepaticarteryspeed.nii.gz:  Processed/%/hepaticarterydistance.nii.gz
+	c3d -verbose $< -shift 1 -reciprocal -o $(@D)/hepaticarteryspeed2.nii.gz
+	c3d -verbose $< -scale -1  -exp -o $@ 
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@ (@D)/hepaticarteryspeed2.nii.gz $< -s  $(@D)/hepaticarterycenterline.nii.gz 
 Processed/%/dynamicG1C4anatomymask.nii.gz: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz

@@ -119,9 +119,9 @@ example_gradientdescent(int argc, char * argv[])
      OptimizerType::Pointer optimizer = OptimizerType::New();
      using NeighborhoodSizeType = itk::Array<PixelType>;
      NeighborhoodSizeType myradius(3);
-     myradius[0]=2;
-     myradius[1]=2;
-     myradius[2]=2;
+     myradius[0]=1;
+     myradius[1]=1;
+     myradius[2]=1;
      optimizer->SetNeighborhoodSize(myradius);
      pathFilter->SetOptimizer(optimizer);
    }
@@ -217,7 +217,7 @@ main(int argc, char * argv[])
 {
   if (argc < 9)
   {
-    std::cerr << "Usage: MinimalPathExtraction OutputImage SpeedImage startIdX startIdY startIdZ endIdX endIdY endIdZ [UseRegularStepGradientDescentOptimizer]  [wayIdX] [wayIdY] [wayIdZ] [TerminationValue]  "
+    std::cerr << "Usage: MinimalPathExtraction OutputImage SpeedImage startIdX startIdY startIdZ endIdX endIdY endIdZ [UseRegularStepGradientDescentOptimizer] [TerminationValue]   [wayIdX] [wayIdY] [wayIdZ] "
               << std::endl;
     return EXIT_FAILURE;
   }

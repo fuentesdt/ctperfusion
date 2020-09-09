@@ -9,6 +9,8 @@ volimage    = squeeze(volimage);
 labimage    = niftiread('Processed/0004/hepaticarterycenterline.nii.gz');
 disimage    = niftiread('Processed/0004/hepaticarterydistance.nii.gz');
 
+jsonText = fileread(jsonFilename);
+jsonData = jsondecode(jsonText)
 
 
 %% extract radius info
