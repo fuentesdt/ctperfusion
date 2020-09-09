@@ -23,9 +23,10 @@ anatomymask: $(addprefix Processed/,$(addsuffix /anatomymask.nii.gz,$(DYNAMICDAT
 dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA))) 
 neighborreg: $(addprefix Processed/,$(addsuffix /dynamicG1C4inc.0000.nii.gz,$(DYNAMICDATA))) 
 neighborsum: $(addprefix Processed/,$(addsuffix /dynamicG1C4incsum.0000.nii.gz,$(DYNAMICDATA))) 
+masksub: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksub.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymask.nhdr,$(DYNAMICDATA))) 
 subtract: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksubtract.nii.gz,$(DYNAMICDATA))) 
 sigmoid: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksigmoid.nii.gz,$(DYNAMICDATA))) 
-vessel: $(addprefix Processed/,$(addsuffix /vessel.nii.gz,$(DYNAMICDATA))) 
+vessel: $(addprefix Processed/,$(addsuffix /vesselcenterline.nii.gz,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
@@ -117,8 +118,16 @@ Processed/%/dynamicG1C4anatomymaskmip.nii.gz:
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -rank -oo $(@D)/rank.%04d.nii.gz
 	BUILDCMD='';for idfile in $$(seq  0 33);do  BUILDCMD="$$BUILDCMD $(@D)/rank.$$(printf %04d $$idfile).nii.gz -thresh 1 1 $$idfile 0"; done; c3d -verbose $$BUILDCMD -accum -add -endaccum -o $(@D)/mipindex.nii.gz
 	
+## Processed/0001/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0001/dynamicG1C4anatomymasksubtract.nii.gz
+## 	c3d -verbose $< -threshold -inf 97% 1 0
+## 	c3d -verbose $< -scale -1 -shift 252.148 -scale 1 -exp -shift 1. -reciprocal -o $@
+Processed/0001/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0001/dynamicG1C4anatomymasksubtract.nii.gz
+	python sigmoid.py --imagefile=$< --outfile=$@ --percentile=97
+Processed/0002/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0002/dynamicG1C4anatomymasksubtract.nii.gz
+	python sigmoid.py --imagefile=$< --outfile=$@ --percentile=97
 Processed/%/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz
 	python sigmoid.py --imagefile=$< --outfile=$@
+	echo vglrun -g $< -o $@ 
 Processed/%/dynamicG1C4anatomymasksubtract.nii.gz: Processed/%/dynamicG1C4anatomymaskmip.nii.gz
 	c3d -verbose $<  $(@D)/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o $@
 Processed/%/vesselness.1.nii.gz: Processed/%/dynamicG1C4anatomymasksigmoid.nii.gz Processed/%/anatomymask.nii.gz 
@@ -143,7 +152,10 @@ Processed/%/otsu.5.nii.gz: Processed/%/vesselness.5.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
 Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  Processed/%/otsu.3.nii.gz  Processed/%/otsu.4.nii.gz   Processed/%/otsu.5.nii.gz 
 	c3d -verbose $^  -accum -add -endaccum -binarize  $(@D)/mipindex.nii.gz -multiply -o $(@D)/vessel.nii.gz
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
+Processed/%/vesselcenterline.nii.gz: Processed/%/vessel.nii.gz
+	./ThinImage $< $(@D)/vesselthin.nii.gz
+	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/vesselthin.nii.gz -binarize -add -o $@
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/0004/portalvein.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
 Processed/0004/hepaticartery.nii.gz: 
@@ -164,7 +176,7 @@ Processed/%/dynamicG1C4anatomymask.nhdr:
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
-Processed/%/dynamicG1C4anatomymasksub.nii.gz: 
+Processed/%/dynamicG1C4anatomymasksub.nhdr: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
 
