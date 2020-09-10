@@ -7,8 +7,8 @@ close all
 % 
              
 idfig = 1;
-%for iddata = [1,4]
-for iddata = [4]
+for iddata = [1,4]
+%for iddata = [4]
    [ tmpvol metadata ] =  nrrdread(sprintf('Processed/%04d/dynamicG1C4anatomymask.nrrd',iddata));
    volimage{iddata} = tmpvol;
    hadimage{iddata} = niftiread(sprintf('Processed/%04d/hepaticartery.distance.nii.gz',iddata));
@@ -85,13 +85,13 @@ for iddata = [4]
    
    pvspeed = jsonData{iddata}.haarclength * 1.e-3/(timing(pvidmaxend )-timing(pvidmaxstart ))  ; % m/s
    haspeed = jsonData{iddata}.pvarclength * 1.e-3/(timing(haidmaxend )-timing(haidmaxstart ))  ; % m/s
-   
 
    figure(idfig);idfig=idfig+1;
    plot(timing,pvstart,'b-'); hold
    plot(timing,pvend  ,'b--');
    plot(timing,hastart,'r-');
    plot(timing,haend  ,'r--');
+   xlabel('time [sec]')
    legend('pvstart','pvend','hastart','haend')
 
    % http://brennen.caltech.edu/fluidbook/basicfluiddynamics/Navierstokesexactsolutions/poiseuilleflow.pdf
@@ -102,10 +102,13 @@ for iddata = [4]
    %  Pa /m * 1mmHg/133.322 Pa * 1m/1e3 mm
    pvdpdx =  pvspeed * 8. *viscosity   * (1.e-3 * pvradiuslist  ).^-2 * 1.e-3/133.322; % mmHg /mm
    hadpdx =  haspeed * 8. *viscosity   * (1.e-3 * haradiuslist  ).^-2 * 1.e-3/133.322; % mmHg /mm
+   pvdp   =  jsonData{iddata}.haarclength * 1.e-3* pvspeed * 8. *viscosity   * (1.e-3 * pvradiuslist  ).^-2 * 1./133.322; % mmHg 
+   hadp   =  jsonData{iddata}.pvarclength * 1.e-3* haspeed * 8. *viscosity   * (1.e-3 * haradiuslist  ).^-2 * 1./133.322; % mmHg 
    
    figure(idfig);idfig=idfig+1; hist(pvdpdx,20); hold; hist(hadpdx,20)
    figure(idfig);idfig=idfig+1; plot(pvradiuslist, pvdpdx , 'b.' ); hold;  plot(haradiuslist, hadpdx , 'r.' )
-   xlabel('mm')
+   xlabel('radius [mm]')
    [min(pvdpdx) max(pvdpdx) mean(pvdpdx) std(pvdpdx) min(hadpdx) max(hadpdx)  mean(hadpdx) std(hadpdx) ]
+   [min(pvdp  ) max(pvdp  ) mean(pvdp  ) std(pvdp  ) min(hadp  ) max(hadp  )  mean(hadp  ) std(hadp  ) ]
 
 end
