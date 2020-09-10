@@ -72,6 +72,6 @@ numpvpoints = len(rawpvpoints)
 pvarclength = writearclength(numpvpoints ,rawpvpoints ,"%spv.vtk" % sys.argv[1])
 
 
-setupconfig = {'haarclength':haarclength ,'pvarclength':pvarclength ,'outputimage ':sys.argv[1], 'centroidvox':centroidvox[1:]} 
+setupconfig = {'haarclength':haarclength ,'pvarclength':pvarclength ,'outputimage ':sys.argv[1], 'hastart':centroidvox[1], 'haend':centroidvox[2], 'pvstart':centroidvox[3], 'pvend':centroidvox[4]} 
 with open(outputjson , 'w') as json_file:
            json.dump(setupconfig , json_file)

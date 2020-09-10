@@ -30,8 +30,7 @@ sigmoid: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksigmoid.nii.g
 sigmoidspeed: $(addprefix Processed/,$(addsuffix /sigmoidspeed.nii.gz,$(DYNAMICDATA))) 
 vessel: $(addprefix Processed/,$(addsuffix /vessel.nii.gz,$(DYNAMICDATA))) 
 vesselmask: $(addprefix Processed/,$(addsuffix /vesselmask.nii.gz,$(DYNAMICDATA))) 
-vesseldistance: $(addprefix Processed/,$(addsuffix /vesseldistance.nii.gz,$(DYNAMICDATA))) 
-vesselcenterline: $(addprefix Processed/,$(addsuffix /vesselcenterline.nii.gz,$(DYNAMICDATA))) 
+vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
@@ -165,22 +164,42 @@ Processed/%/otsu.5.nii.gz: Processed/%/vesselness.5.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
 Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  Processed/%/otsu.3.nii.gz  Processed/%/otsu.4.nii.gz   Processed/%/otsu.5.nii.gz 
 	c3d -verbose $^  -accum -add -endaccum -binarize  $(@D)/mipindex.nii.gz -multiply -o $(@D)/vessel.nii.gz
-Processed/%/hepaticarterycenterline.nii.gz: Processed/%/hepaticartery.nii.gz
-	./ThinImage $< $(@D)/hepaticarterythin.nii.gz
-	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/hepaticarterythin.nii.gz -binarize -add -o $@
-Processed/%/portalveincenterline.nii.gz: Processed/%/portalvein.nii.gz
-	./ThinImage $< $(@D)/portalveinthin.nii.gz
-	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/portalveinthin.nii.gz -binarize -add -o $@
-Processed/%/vesselcenterline.nii.gz: Processed/%/portalveincenterline.nii.gz Processed/%/hepaticarterycenterline.nii.gz
-	c3d -verbose $< -scale 10 $(word 2,$^) -add -o $@ 
-## Processed/%/hepaticarterydistance.nii.gz: Processed/%/hepaticarterycenterline.nii.gz
-## 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
-## 	c3d $@ $< -lstat
-## 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@  -s $< 
-Processed/%/hepaticarteryspeed.nii.gz:  Processed/%/hepaticarterydistance.nii.gz
-	c3d -verbose $< -shift 1 -reciprocal -o $(@D)/hepaticarteryspeed2.nii.gz
-	c3d -verbose $< -scale -1  -exp -o $@ 
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@ (@D)/hepaticarteryspeed2.nii.gz $< -s  $(@D)/hepaticarterycenterline.nii.gz 
+
+Processed/0001/portalvein.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein1.nii.gz 257 314 74 17 21 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein2.nii.gz 263 348 75 17 21 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein3.nii.gz 300 325 80 17 21 
+	echo ./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein4.nii.gz 227 354 69 17 21 
+	c3d -verbose  Processed/0001/portalvein?.nii.gz -accum -add -endaccum -type uchar -o $@
+Processed/0001/hepaticartery.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 258 346 66 12 15 
+Processed/0002/portalvein.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 251 353 74 18 21
+Processed/0002/hepaticartery.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 265 346 68 10 14 
+Processed/0003/portalvein.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 270 285 78 18 21
+Processed/0003/hepaticartery.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 278 283 66 11 14
+Processed/0004/portalvein.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
+Processed/0004/hepaticartery.connected.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
+Processed/%/arclength.json: Processed/%/sigmoidspeed.nii.gz Processed/%/arclengthfiducials.nii.gz
+	python PathExtraction.py $(basename $@)  $^ 
+Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Processed/%/portalvein.connected.nii.gz 
+	c3d -verbose $< -binarize  $(word 2,$^) -replace 255 2  -add -o $@
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $(@D)/vessel.nii.gz 
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
+
+
+Processed/%.thin.nii.gz: Processed/%.connected.nii.gz
+	./ThinImage $< $@
+Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii.gz
+	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(word 2,$^) -binarize -add -o $@
+Processed/%.distance.nii.gz: Processed/%.centerline.nii.gz
+	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
+	c3d $@ $< -lstat
 Processed/%/dynamicG1C4anatomymask.nrrd: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
@@ -278,52 +297,6 @@ Processed/%.csv: Processed/%.nii.gz
 
 Processed/0001/velocity.nii.gz:
 	c3d -verbose Processed/0001/sdt.nii.gz Processed/0001/globalid.nii.gz -scale 1.57 -reciprocal -multiply Processed/0001/slicmask.nii.gz -binarize -replace 0 inf -multiply -o Processed/0001/velocity.nii.gz
-
-Processed/0001/portalvein.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein1.nii.gz 257 314 74 17 21 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein2.nii.gz 263 348 75 17 21 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein3.nii.gz 300 325 80 17 21 
-	echo ./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein4.nii.gz 227 354 69 17 21 
-	c3d -verbose  Processed/0001/portalvein?.nii.gz -accum -add -endaccum -type uchar -o $@
-Processed/0001/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 258 346 66 12 15 
-Processed/0002/portalvein.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 251 353 74 18 21
-Processed/0002/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 265 346 68 10 14 
-Processed/0003/portalvein.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 270 285 78 18 21
-Processed/0003/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 278 283 66 11 14
-Processed/0004/portalvein.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
-Processed/0004/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
-Processed/%/arclength.json: Processed/%/sigmoidspeed.nii.gz Processed/%/arclengthfiducials.nii.gz
-	python PathExtraction.py $(basename $@)  $^ 
-Processed/0001/hepaticarteryarclength.json: Processed/0001/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $< 193  343  38 319 254  73 2 1 
-Processed/0001/portalveinarclength.json: Processed/0001/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/0002/hepaticarteryarclength.json: Processed/0002/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/0002/portalveinarclength.json: Processed/0002/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/0003/hepaticarteryarclength.json: Processed/0003/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/0003/portalveinarclength.json: Processed/0003/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/0004/hepaticarteryarclength.json: Processed/0004/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $< 272 262 72 174 251 12 2 1 
-Processed/0004/portalveinarclength.json: Processed/0004/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
-Processed/%/vesseldistance.nii.gz: Processed/%/vesselmask.nii.gz
-	./ThinImage $< $(@D)/vesselthin.nii.gz
-	c3d -verbose $(@D)/vesselthin.nii.gz  -binarize  -sdt -o $@
-Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.nii.gz Processed/%/portalvein.nii.gz 
-	c3d -verbose $< -binarize  $(word 2,$^) -replace 255 2  -add -o $@
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $(@D)/vessel.nii.gz 
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 Processed/0001/outline.nii.gz: 
 	c3d -verbose Processed/0001/vesselmask.nii.gz -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
