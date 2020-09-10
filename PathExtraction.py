@@ -3,51 +3,75 @@ import math
 import subprocess
 import sys
 import json
+def writearclength(numpoints,rawpoints,outputVTK):
+   slicerOrientation   = vtk.vtkPoints()
+   slicerOrientation.SetNumberOfPoints(numpoints)
+   for idpoint in range(numpoints):
+     slicerOrientation.SetPoint(idpoint,rawpoints[idpoint][   0],rawpoints[idpoint][   1],rawpoints[idpoint][   2] )
+   
+   # loop over points an store in vtk data structure
+   arclength = 0.0
+   vertices= vtk.vtkCellArray()
+   for idpoint in range(slicerOrientation.GetNumberOfPoints()-1):
+       line = vtk.vtkLine()
+       line.GetPointIds().SetId(0, idpoint)
+       line.GetPointIds().SetId(1, idpoint+1)
+       arclength = arclength + math.sqrt(vtk.vtkMath.Distance2BetweenPoints(rawpoints[idpoint],rawpoints[idpoint+1]))
+       vertices.InsertNextCell( line ) 
+   
+   print "arclength =  ", arclength 
+   
+   # set polydata
+   polydata = vtk.vtkPolyData()
+   polydata.SetPoints(slicerOrientation)
+   polydata.SetLines( vertices )
+   
+   # write to file
+   polydatawriter = vtk.vtkDataSetWriter()
+   polydatawriter.SetFileName(outputVTK)
+   polydatawriter.SetInputData(polydata)
+   polydatawriter.Update()
+   return arclength
+
+
 print "This is the name of the script: ", sys.argv[0]
-outputVTK  = sys.argv[1].replace('.nii.gz','.vtk')
-outputjson = sys.argv[1].replace('.nii.gz','.json')
-print "outputfiles   " , outputVTK ,outputjson 
+outputjson = "%s.json" % sys.argv[1]
+print "outputfile   " , outputjson 
 print "Number of arguments: ", len(sys.argv)
 print "The arguments are: " , sys.argv
 
 
-
-
-getPointsCmd = './PathExtraction %s |  grep MeshPoints ' % ' '.join( sys.argv[1:])
-print getPointsCmd 
-pointsProcess = subprocess.Popen(getPointsCmd ,shell=True,stdout=subprocess.PIPE )
-while ( pointsProcess.poll() == None ):
+getCentroidCmd = 'c3d %s -split -foreach -centroid -endfor' %  sys.argv[3]
+print getCentroidCmd
+centroidProcess = subprocess.Popen(getCentroidCmd ,shell=True,stdout=subprocess.PIPE )
+while ( centroidProcess.poll() == None ):
    pass
-rawpoints = [eval(lines.strip('\n').split("MeshPoints:")[1]) for lines in pointsProcess.stdout.readlines()]
-numpoints = len(rawpoints)
-slicerOrientation   = vtk.vtkPoints()
-slicerOrientation.SetNumberOfPoints(numpoints)
-for idpoint in range(numpoints):
-  slicerOrientation.SetPoint(idpoint,rawpoints[idpoint][   0],rawpoints[idpoint][   1],rawpoints[idpoint][   2] )
+rawcentroid = [lines.strip('\n') for lines in centroidProcess.stdout.readlines()]
+centroidvox = [eval(x.split("CENTROID_VOX")[1]) for x in rawcentroid if "CENTROID_VOX" in x]
+numcentroid = len(centroidvox)
+# 4 label + background
+assert (numcentroid  == 5)
 
-# loop over points an store in vtk data structure
-arclength = 0.0
-vertices= vtk.vtkCellArray()
-for idpoint in range(slicerOrientation.GetNumberOfPoints()-1):
-    line = vtk.vtkLine()
-    line.GetPointIds().SetId(0, idpoint)
-    line.GetPointIds().SetId(1, idpoint+1)
-    arclength = arclength + math.sqrt(vtk.vtkMath.Distance2BetweenPoints(rawpoints[idpoint],rawpoints[idpoint+1]))
-    vertices.InsertNextCell( line ) 
 
-print "arclength =  ", arclength 
+getHAPointsCmd = './PathExtraction %sha.nii.gz  %s %d %d %d %d %d %d 2 1|  grep MeshPoints ' %  (sys.argv[1],sys.argv[2], centroidvox[1][0], centroidvox[1][1], centroidvox[1][2], centroidvox[2][0], centroidvox[2][1], centroidvox[2][2])
+print getHAPointsCmd 
+haPointsProcess = subprocess.Popen(getHAPointsCmd ,shell=True,stdout=subprocess.PIPE )
+while ( haPointsProcess.poll() == None ):
+   pass
+rawhapoints = [eval(lines.strip('\n').split("MeshPoints:")[1]) for lines in haPointsProcess.stdout.readlines()]
+numhapoints = len(rawhapoints)
+haarclength = writearclength(numhapoints ,rawhapoints ,"%sha.vtk" % sys.argv[1])
 
-# set polydata
-polydata = vtk.vtkPolyData()
-polydata.SetPoints(slicerOrientation)
-polydata.SetLines( vertices )
+getPVPointsCmd = './PathExtraction %sha.nii.gz  %s %d %d %d %d %d %d 2 1|  grep MeshPoints ' %  (sys.argv[1],sys.argv[2], centroidvox[3][0], centroidvox[3][1], centroidvox[3][2], centroidvox[4][0], centroidvox[4][1], centroidvox[4][2])
+print getPVPointsCmd 
+pvPointsProcess = subprocess.Popen(getPVPointsCmd ,shell=True,stdout=subprocess.PIPE )
+while ( pvPointsProcess.poll() == None ):
+   pass
+rawpvpoints = [eval(lines.strip('\n').split("MeshPoints:")[1]) for lines in pvPointsProcess.stdout.readlines()]
+numpvpoints = len(rawpvpoints)
+pvarclength = writearclength(numpvpoints ,rawpvpoints ,"%spv.vtk" % sys.argv[1])
 
-# write to file
-polydatawriter = vtk.vtkDataSetWriter()
-polydatawriter.SetFileName(outputVTK)
-polydatawriter.SetInputData(polydata)
-polydatawriter.Update()
 
-setupconfig = {'arclength':arclength ,'outputimage ':sys.argv[1]} 
+setupconfig = {'haarclength':haarclength ,'pvarclength':pvarclength ,'outputimage ':sys.argv[1], 'centroidvox':centroidvox[1:]} 
 with open(outputjson , 'w') as json_file:
            json.dump(setupconfig , json_file)

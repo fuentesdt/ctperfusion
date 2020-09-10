@@ -17,9 +17,11 @@ labimage{1} = nrrdread('Processed/0001/vesselcenterline.nii.gz');
 labimage{2} = nrrdread('Processed/0002/vesselcenterline.nii.gz');
 labimage{3} = nrrdread('Processed/0003/vesselcenterline.nii.gz');
 labimage{4} = nrrdread('Processed/0004/vesselcenterline.nii.gz');
+jsonData{1} = jsondecode(fileread('Processed/0001/arclength.json'))
+jsonData{2} = jsondecode(fileread('Processed/0002/arclength.json'))
+jsonData{3} = jsondecode(fileread('Processed/0003/arclength.json'))
+jsonData{4} = jsondecode(fileread('Processed/0004/arclength.json'))
 
-jsonText = fileread(jsonFilename);
-jsonData = jsondecode(jsonText)
 
 
 %% extract radius info

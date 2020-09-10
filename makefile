@@ -68,8 +68,10 @@ Processed/%/viewslic:
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz
 Processed/%/viewsoln: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz $(@D)/globalid.nii.gz $(@D)/solution.nii.gz $(@D)/residual.nii.gz  $(@D)/meanglobalid.nii.gz $(@D)/meansolution.nii.gz $(@D)/meanresidual.nii.gz $(@D)/slicmask.nii.gz 
-Processed/%/viewaif: Processed/%/aif.nii.gz
-	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(@D)/vesselmask.nii.gz  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nhdr");slicer.util.loadLabelVolume( "$<")' 
+Processed/%/arclengthfiducials.nii.gz: Processed/%/mask.nii.gz
+	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
+Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.gz
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nrrd");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(@D)/vesselcenterline.nii.gz");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/slic.nii.gz:
@@ -283,8 +285,6 @@ Processed/0001/portalvein.nii.gz:
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein3.nii.gz 300 325 80 17 21 
 	echo ./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein4.nii.gz 227 354 69 17 21 
 	c3d -verbose  Processed/0001/portalvein?.nii.gz -accum -add -endaccum -type uchar -o $@
-Processed/0004/hepaticarteryarclength.json: Processed/0004/sigmoidspeed.nii.gz
-	python PathExtraction.py $(basename $@).nii.gz $< 272 262 72 174 251 12 2 1 
 Processed/0001/hepaticartery.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 258 346 66 12 15 
 Processed/0002/portalvein.nii.gz: 
@@ -299,6 +299,24 @@ Processed/0004/portalvein.nii.gz:
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
 Processed/0004/hepaticartery.nii.gz: 
 	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
+Processed/%/arclength.json: Processed/%/sigmoidspeed.nii.gz Processed/%/arclengthfiducials.nii.gz
+	python PathExtraction.py $(basename $@)  $^ 
+Processed/0001/hepaticarteryarclength.json: Processed/0001/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $< 193  343  38 319 254  73 2 1 
+Processed/0001/portalveinarclength.json: Processed/0001/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
+Processed/0002/hepaticarteryarclength.json: Processed/0002/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
+Processed/0002/portalveinarclength.json: Processed/0002/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
+Processed/0003/hepaticarteryarclength.json: Processed/0003/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
+Processed/0003/portalveinarclength.json: Processed/0003/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
+Processed/0004/hepaticarteryarclength.json: Processed/0004/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $< 272 262 72 174 251 12 2 1 
+Processed/0004/portalveinarclength.json: Processed/0004/sigmoidspeed.nii.gz
+	python PathExtraction.py $(basename $@).nii.gz $<                       2 1 
 Processed/%/vesseldistance.nii.gz: Processed/%/vesselmask.nii.gz
 	./ThinImage $< $(@D)/vesselthin.nii.gz
 	c3d -verbose $(@D)/vesselthin.nii.gz  -binarize  -sdt -o $@
