@@ -11,7 +11,7 @@ tags:
 	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_SOURCE) .
 
 ATROPOSCMD=/opt/apps/ANTsR/dev//ANTsR_src/ANTsR/src/ANTS/ANTS-build//bin/Atropos -d 3 -c [3,0.0] 
-SLICER=vglrun /opt/apps/slicer/Slicer-4.4.0-linux-amd64/Slicer
+SLICER=vglrun /opt/apps/slicer/Slicer-4.11.0-2020-09-08-linux-amd64/Slicer
 DYNAMICDATA =  0001 0002 0003 0004 
 
 
@@ -23,7 +23,7 @@ anatomymask: $(addprefix Processed/,$(addsuffix /anatomymask.nii.gz,$(DYNAMICDAT
 dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA))) 
 neighborreg: $(addprefix Processed/,$(addsuffix /dynamicG1C4inc.0000.nii.gz,$(DYNAMICDATA))) 
 neighborsum: $(addprefix Processed/,$(addsuffix /dynamicG1C4incsum.0000.nii.gz,$(DYNAMICDATA))) 
-masksub: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksub.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymask.nhdr,$(DYNAMICDATA))) 
+masksub: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksub.nrrd,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymask.nrrd,$(DYNAMICDATA))) 
 maskmip: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymaskmip.nii.gz,$(DYNAMICDATA))) 
 subtract: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksubtract.nii.gz,$(DYNAMICDATA))) 
 sigmoid: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksigmoid.nii.gz,$(DYNAMICDATA))) 
@@ -59,7 +59,7 @@ Processed/%/roi.nii.gz: Processed/%/mask.nii.gz
 Processed/%/viewroi: Processed/%/roi.nii.gz
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
 Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
-	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; fi
+	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewmask: Processed/%/mask.nii.gz
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
 Processed/%/viewslic: 
@@ -67,8 +67,7 @@ Processed/%/viewslic:
 Processed/%/viewsoln: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz $(@D)/globalid.nii.gz $(@D)/solution.nii.gz $(@D)/residual.nii.gz  $(@D)/meanglobalid.nii.gz $(@D)/meansolution.nii.gz $(@D)/meanresidual.nii.gz $(@D)/slicmask.nii.gz 
 Processed/%/viewaif: Processed/%/aif.nii.gz
-	$(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamic.nrrd");slicer.util.loadVolume("$(@D)/dynamicmean.nhdr");slicer.util.loadLabelVolume( "$<")' 
-	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(@D)/vesselmask.nii.gz  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nhdr");slicer.util.loadLabelVolume( "$<")' 
 Processed/%/slic.nii.gz:
 	./itkSLICImageFilter $(@D)/dynamic.0033.nii.gz $@ 20 1
 Processed/%/sdt.nii.gz: Processed/%/vesselmask.nii.gz
@@ -173,12 +172,15 @@ Processed/%/hepaticarteryspeed.nii.gz:  Processed/%/hepaticarterydistance.nii.gz
 	c3d -verbose $< -shift 1 -reciprocal -o $(@D)/hepaticarteryspeed2.nii.gz
 	c3d -verbose $< -scale -1  -exp -o $@ 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@ (@D)/hepaticarteryspeed2.nii.gz $< -s  $(@D)/hepaticarterycenterline.nii.gz 
-Processed/%/dynamicG1C4anatomymask.nhdr: 
-	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
-	grep MultiVolume Processed/$*/dynamic.nhdr >> $@
+Processed/%/dynamicG1C4anatomymask.nrrd: 
+	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $(basename $@).nhdr
+	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
+	./ImageReadWrite $(basename $@).nhdr  $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
-Processed/%/dynamicG1C4anatomymasksub.nhdr: 
-	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $@
+Processed/%/dynamicG1C4anatomymasksub.nrrd: 
+	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $(basename $@).nhdr
+	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
+	./ImageReadWrite $(basename $@).nhdr  $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
 
 Processed/%/dynamicG1C4.0032.G1C4deformed.nii.gz:
