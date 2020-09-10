@@ -4,11 +4,19 @@ close all
 % vglrun itksnap -g Processed/0004/dynamicG1C4anatomymasksub.nii.gz -s Processed/0004/hepaticarterycenterline.nii.gz -o Processed/0004/hepaticarterydistance.nii.gz
 % vglrun itksnap -g Processed/0004/dynamicG1C4anatomymasksubtract.nii.gz -s Processed/0004/hepaticartery.nii.gz
 % c3d  Processed/0004/hepaticarterydistance.nii.gz Processed/0004/hepaticarterycenterline.nii.gz -lstat
-[rawdce, dcemeta] = nrrdread('Processed/0001/dynamicG1C4anatomymasksub.nhdr');
-volimage{1} = niftiread('Processed/0001/dynamicG1C4anatomymasksub.nii.gz');
-volimage{2} = niftiread('Processed/0002/dynamicG1C4anatomymasksub.nii.gz');
-labimage    = niftiread('Processed/0004/hepaticarterycenterline.nii.gz');
-disimage    = niftiread('Processed/0004/hepaticarterydistance.nii.gz');
+             
+volimage{1} = nrrdread('Processed/0001/dynamicG1C4anatomymask.nrrd');
+volimage{2} = nrrdread('Processed/0002/dynamicG1C4anatomymask.nrrd');
+volimage{3} = nrrdread('Processed/0003/dynamicG1C4anatomymask.nrrd');
+volimage{4} = nrrdread('Processed/0004/dynamicG1C4anatomymask.nrrd');
+disimage{1} = nrrdread('Processed/0001/vesseldistance.nii.gz');
+disimage{2} = nrrdread('Processed/0002/vesseldistance.nii.gz');
+disimage{3} = nrrdread('Processed/0003/vesseldistance.nii.gz');
+disimage{4} = nrrdread('Processed/0004/vesseldistance.nii.gz');
+labimage{1} = nrrdread('Processed/0001/vesselcenterline.nii.gz');
+labimage{2} = nrrdread('Processed/0002/vesselcenterline.nii.gz');
+labimage{3} = nrrdread('Processed/0003/vesselcenterline.nii.gz');
+labimage{4} = nrrdread('Processed/0004/vesselcenterline.nii.gz');
 
 jsonText = fileread(jsonFilename);
 jsonData = jsondecode(jsonText)
