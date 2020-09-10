@@ -12,7 +12,7 @@ tags:
 
 ATROPOSCMD=/opt/apps/ANTsR/dev//ANTsR_src/ANTsR/src/ANTS/ANTS-build//bin/Atropos -d 3 -c [3,0.0] 
 SLICER=vglrun /opt/apps/slicer/Slicer-4.4.0-linux-amd64/Slicer
-DYNAMICDATA =  0001 0002 0003 0004 0005
+DYNAMICDATA =  0001 0002 0003 0004 
 
 
 
@@ -24,9 +24,12 @@ dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA)
 neighborreg: $(addprefix Processed/,$(addsuffix /dynamicG1C4inc.0000.nii.gz,$(DYNAMICDATA))) 
 neighborsum: $(addprefix Processed/,$(addsuffix /dynamicG1C4incsum.0000.nii.gz,$(DYNAMICDATA))) 
 masksub: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksub.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymask.nhdr,$(DYNAMICDATA))) 
+maskmip: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymaskmip.nii.gz,$(DYNAMICDATA))) 
 subtract: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksubtract.nii.gz,$(DYNAMICDATA))) 
 sigmoid: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksigmoid.nii.gz,$(DYNAMICDATA))) 
-vessel: $(addprefix Processed/,$(addsuffix /vesselcenterline.nii.gz,$(DYNAMICDATA))) 
+sigmoidspeed: $(addprefix Processed/,$(addsuffix /sigmoidspeed.nii.gz,$(DYNAMICDATA))) 
+vessel: $(addprefix Processed/,$(addsuffix /vessel.nii.gz,$(DYNAMICDATA))) 
+vesselmask: $(addprefix Processed/,$(addsuffix /vesselmask.nii.gz,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
@@ -116,7 +119,7 @@ Processed/%/dynamicG1C4anatomymaskmip.nii.gz:
 	ls $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  | wc
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -accum -max -endaccum -o $@
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz -rank -oo $(@D)/rank.%04d.nii.gz
-	BUILDCMD='';for idfile in $$(seq  0 33);do  BUILDCMD="$$BUILDCMD $(@D)/rank.$$(printf %04d $$idfile).nii.gz -thresh 1 1 $$idfile 0"; done; c3d -verbose $$BUILDCMD -accum -add -endaccum -o $(@D)/mipindex.nii.gz
+	BUILDCMD='';for idfile in $$(seq  0 33);do  BUILDCMD="$$BUILDCMD $(@D)/rank.$$(printf %04d $$idfile).nii.gz -thresh 1 1 $$idfile 0"; done; c3d -verbose $$BUILDCMD -accum -add -endaccum -type uchar -o $(@D)/mipindex.nii.gz
 	
 ## Processed/0001/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0001/dynamicG1C4anatomymasksubtract.nii.gz
 ## 	c3d -verbose $< -threshold -inf 97% 1 0
@@ -128,6 +131,11 @@ Processed/0002/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/0002/dynamicG1C4a
 Processed/%/dynamicG1C4anatomymasksigmoid.nii.gz: Processed/%/dynamicG1C4anatomymasksubtract.nii.gz
 	python sigmoid.py --imagefile=$< --outfile=$@
 	echo vglrun -g $< -o $@ 
+Processed/%/sigmoidcenterline.nii.gz: Processed/%/dynamicG1C4anatomymasksigmoid.nii.gz
+	./ThinImage $< $@
+Processed/%/sigmoidspeed.nii.gz:  Processed/%/sigmoidcenterline.nii.gz
+	c3d -verbose $< -scale -1  -exp -o $@ 
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -o $@  -s  $< 
 Processed/%/dynamicG1C4anatomymasksubtract.nii.gz: Processed/%/dynamicG1C4anatomymaskmip.nii.gz
 	c3d -verbose $<  $(@D)/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o $@
 Processed/%/vesselness.1.nii.gz: Processed/%/dynamicG1C4anatomymasksigmoid.nii.gz Processed/%/anatomymask.nii.gz 
@@ -152,18 +160,11 @@ Processed/%/otsu.5.nii.gz: Processed/%/vesselness.5.nii.gz
 	/rsrch1/ip/dtfuentes/github/ExLib/OtsuFilter/OtsuThresholdImageFilter $< $@ 1  0 
 Processed/%/vessel.nii.gz: Processed/%/otsu.1.nii.gz Processed/%/otsu.2.nii.gz  Processed/%/otsu.3.nii.gz  Processed/%/otsu.4.nii.gz   Processed/%/otsu.5.nii.gz 
 	c3d -verbose $^  -accum -add -endaccum -binarize  $(@D)/mipindex.nii.gz -multiply -o $(@D)/vessel.nii.gz
-Processed/%/vesselcenterline.nii.gz: Processed/%/vessel.nii.gz
-	./ThinImage $< $(@D)/vesselthin.nii.gz
-	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/vesselthin.nii.gz -binarize -add -o $@
-	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
-Processed/0004/portalvein.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
-Processed/0004/hepaticartery.nii.gz: 
-	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
 Processed/%/hepaticarterycenterline.nii.gz: Processed/%/hepaticartery.nii.gz
 	./ThinImage $< $(@D)/hepaticarterythin.nii.gz
 	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(@D)/hepaticarterythin.nii.gz -binarize -add -o $@
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $@  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/hepaticarterydistance.nii.gz: Processed/%/hepaticarterycenterline.nii.gz
 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
 	c3d $@ $< -lstat
@@ -267,9 +268,30 @@ Processed/%.csv: Processed/%.nii.gz
 Processed/0001/velocity.nii.gz:
 	c3d -verbose Processed/0001/sdt.nii.gz Processed/0001/globalid.nii.gz -scale 1.57 -reciprocal -multiply Processed/0001/slicmask.nii.gz -binarize -replace 0 inf -multiply -o Processed/0001/velocity.nii.gz
 
-Processed/0001/vesselmask.nii.gz:
-	c3d -verbose $(@D)/dynamic.0033.nii.gz  -thresh 245 inf 1 0 $(@D)/mask.nii.gz -as A -binarize -multiply -o $(@D)/livervessel.nii.gz
-	c3d -verbose $(@D)/livervessel.nii.gz  -replace 1 0 0 1    $(@D)/mask.nii.gz -multiply  $(@D)/livervessel.nii.gz -add -o $@
+Processed/0001/portalvein.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein1.nii.gz 257 314 74 17 21 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein2.nii.gz 263 348 75 17 21 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein3.nii.gz 300 325 80 17 21 
+	echo ./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz Processed/0001/portalvein4.nii.gz 227 354 69 17 21 
+	c3d -verbose  Processed/0001/portalvein?.nii.gz -accum -add -endaccum -type uchar -o $@
+Processed/0001/hepaticartery.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 258 346 66 12 15 
+Processed/0002/portalvein.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 251 353 74 18 21
+Processed/0002/hepaticartery.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 265 346 68 10 14 
+Processed/0003/portalvein.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 270 285 78 18 21
+Processed/0003/hepaticartery.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 278 283 66 11 14
+Processed/0004/portalvein.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 253 275 75 14 17 
+Processed/0004/hepaticartery.nii.gz: 
+	./ConnectedThresholdImageFilter $(@D)/vessel.nii.gz $@ 257 277 68 10 14 
+Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.nii.gz Processed/%/portalvein.nii.gz 
+	c3d -verbose $< -binarize  $(word 2,$^) -replace 255 2  -add -o $@
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $(@D)/vessel.nii.gz 
+	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 Processed/0001/outline.nii.gz: 
 	c3d -verbose Processed/0001/vesselmask.nii.gz -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
