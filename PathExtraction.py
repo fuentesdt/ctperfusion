@@ -1,9 +1,19 @@
 import vtk
 import math
 import subprocess
+import sys
+import json
+print "This is the name of the script: ", sys.argv[0]
+outputVTK  = sys.argv[1].replace('.nii.gz','.vtk')
+outputjson = sys.argv[1].replace('.nii.gz','.json')
+print "outputfiles   " , outputVTK ,outputjson 
+print "Number of arguments: ", len(sys.argv)
+print "The arguments are: " , sys.argv
 
-outputimage =  'test.nii.gz'
-getPointsCmd = './PathExtraction %s Processed/0004/hepaticarteryspeed2.nii.gz 272 262 72 174 251 12 2 1 | grep MeshPoints ' % outputimage 
+
+
+
+getPointsCmd = './PathExtraction %s |  grep MeshPoints ' % ' '.join( sys.argv[1:])
 print getPointsCmd 
 pointsProcess = subprocess.Popen(getPointsCmd ,shell=True,stdout=subprocess.PIPE )
 while ( pointsProcess.poll() == None ):
@@ -33,13 +43,11 @@ polydata.SetPoints(slicerOrientation)
 polydata.SetLines( vertices )
 
 # write to file
-OutputFileName = 'pttest.vtk'
 polydatawriter = vtk.vtkDataSetWriter()
-polydatawriter.SetFileName(OutputFileName)
+polydatawriter.SetFileName(outputVTK)
 polydatawriter.SetInputData(polydata)
 polydatawriter.Update()
 
-setupconfig = {'arclength':arclength ,'outputimage ':outputimage } 
-setupprereq    = 'setup.json'
-with open(setupprereq, 'w') as json_file:
+setupconfig = {'arclength':arclength ,'outputimage ':sys.argv[1]} 
+with open(outputjson , 'w') as json_file:
            json.dump(setupconfig , json_file)
