@@ -23,7 +23,7 @@ example_gradientdescent(int argc, char * argv[])
   // Typedefs
   constexpr unsigned int Dimension = 3;
   using PixelType = float;
-  using OutputPixelType = unsigned char;
+  using OutputPixelType = short ;
   using ImageType = itk::Image<PixelType, Dimension>;
   using OutputImageType = itk::Image<OutputPixelType, Dimension>;
   using ReaderType = itk::ImageFileReader<ImageType>;
@@ -189,15 +189,19 @@ example_gradientdescent(int argc, char * argv[])
       indexout[1]   = vertexList->GetElement(i)[1];
       indexout[2]   = vertexList->GetElement(i)[2];
       speed->TransformIndexToPhysicalPoint(indexout,pointout );
+      std::cout << "IdxPoints: " << indexout << std::endl;
       std::cout << "MeshPoints: " << pointout << std::endl;
     }
  
 
     // Iterate path and convert to image
     PathIteratorType it(output, path);
-    for (it.GoToBegin(); !it.IsAtEnd(); ++it)
+    unsigned int iii=0;
+    for ( it.GoToBegin(); !it.IsAtEnd(); ++it)
     {
-      it.Set(itk::NumericTraits<OutputPixelType>::max());
+      //it.Set(itk::NumericTraits<OutputPixelType>::max());
+      iii = iii +1;
+      it.Set(iii);
     }
   }
 

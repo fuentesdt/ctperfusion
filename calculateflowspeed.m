@@ -7,24 +7,25 @@ close all
 % 
              
 idfig = 1;
-for iddata = [1,4]
-%for iddata = [4]
+%for iddata = [1,4]
+for iddata = [1]
+   disp(sprintf('iddata = %d',iddata));
    [ tmpvol metadata ] =  nrrdread(sprintf('Processed/%04d/dynamicG1C4anatomymask.nrrd',iddata));
    volimage{iddata} = tmpvol;
    hadimage{iddata} = niftiread(sprintf('Processed/%04d/hepaticartery.distance.nii.gz',iddata));
    halimage{iddata} = niftiread(sprintf('Processed/%04d/hepaticartery.centerline.nii.gz',iddata));
    pvdimage{iddata} = niftiread(sprintf('Processed/%04d/portalvein.distance.nii.gz',iddata));
    pvlimage{iddata} = niftiread(sprintf('Processed/%04d/portalvein.centerline.nii.gz',iddata));
-   jsonData{iddata} = jsondecode(fileread(sprintf('Processed/%04d/arclength.json',iddata)))
+   jsonData{iddata} = jsondecode(fileread(sprintf('Processed/%04d/arclength.json',iddata)));
 
    %% Get Timing Info
    jsonData{iddata}.rawtiming = eval(['[',metadata.multivolumeframelabels,']']);
    if metadata.multivolumeframeidentifyingdicomtagunits == 'ms'
-     timing = jsonData{iddata}.rawtiming * 1.e-3   % convert to seconds 
+     timing = jsonData{iddata}.rawtiming * 1.e-3;   % convert to seconds 
    end
    
    %% variable spacing
-   deltat =  [ timing(2) - timing(1), timing(2:length(timing)) - timing(1:length(timing)-1)]
+   deltat =  [ timing(2) - timing(1), timing(2:length(timing)) - timing(1:length(timing)-1)];
    
    deltatmean   =  mean(deltat)
    deltatmedian =  median(deltat)
@@ -39,13 +40,11 @@ for iddata = [1,4]
    pvradiuslist  = pvdimage{iddata}(find(pvlimage{iddata} == 1 ));
    figure(idfig);idfig=idfig+1;
    hist(pvradiuslist,20)
-   [min(pvradiuslist) max(pvradiuslist) mean(pvradiuslist) std(pvradiuslist)]
    
    %% extract ha radius info
    haradiuslist  = hadimage{iddata}(find(halimage{iddata} == 1 ));
    figure(idfig);idfig=idfig+1;
    hist(haradiuslist,20)
-   [min(haradiuslist) max(haradiuslist) mean(haradiuslist) std(haradiuslist)]
    
    %% extract pv centerline info
    [pvxroicenter,pvyroicenter,pvzroicenter] = ind2sub(size(pvlimage{iddata}), find(pvlimage{iddata} == 3 ));
@@ -83,8 +82,10 @@ for iddata = [1,4]
    [ hamaxstart haidmaxstart ]  = max (hastart);
    [ hamaxend   haidmaxend   ]  = max (haend  );
    
-   pvspeed = jsonData{iddata}.haarclength * 1.e-3/(timing(pvidmaxend )-timing(pvidmaxstart ))  ; % m/s
-   haspeed = jsonData{iddata}.pvarclength * 1.e-3/(timing(haidmaxend )-timing(haidmaxstart ))  ; % m/s
+   pvspeed = jsonData{iddata}.pvarclength * 1.e-3/(timing(pvidmaxend )-timing(pvidmaxstart ))  ; % m/s
+   haspeed = jsonData{iddata}.haarclength * 1.e-3/(timing(haidmaxend )-timing(haidmaxstart ))  ; % m/s
+
+
 
    figure(idfig);idfig=idfig+1;
    plot(timing,pvstart,'b-'); hold
@@ -108,7 +109,26 @@ for iddata = [1,4]
    figure(idfig);idfig=idfig+1; hist(pvdpdx,20); hold; hist(hadpdx,20)
    figure(idfig);idfig=idfig+1; plot(pvradiuslist, pvdpdx , 'b.' ); hold;  plot(haradiuslist, hadpdx , 'r.' )
    xlabel('radius [mm]')
-   [min(pvdpdx) max(pvdpdx) mean(pvdpdx) std(pvdpdx) min(hadpdx) max(hadpdx)  mean(hadpdx) std(hadpdx) ]
-   [min(pvdp  ) max(pvdp  ) mean(pvdp  ) std(pvdp  ) min(hadp  ) max(hadp  )  mean(hadp  ) std(hadp  ) ]
+   
+   mindpdx = [ min(pvdpdx); min(hadpdx)];
+   maxdpdx = [ max(pvdpdx); max(hadpdx)];
+   meandpdx= [ mean(pvdpdx); mean(hadpdx)];
+   stddpdx = [ std(pvdpdx); std(hadpdx)];
+   mindp   = [ min(pvdp  ); min(hadp  )];
+   maxdp   = [ max(pvdp  ); max(hadp  )];
+   meandp  = [ mean(pvdp  ); mean(hadp  )];
+   stddp   = [ std(pvdp  ); std(hadp  )];
+
+   vessel  = {'portal vein'; 'hepatic artery' };
+   minradius = [min(pvradiuslist); min(haradiuslist)];
+   maxradius = [max(pvradiuslist); max(haradiuslist)];
+   meanradius= [mean(pvradiuslist);mean(haradiuslist)];
+   stdradius = [std(pvradiuslist); std(haradiuslist)];
+   table(vessel , minradius ,mindpdx ,mindp, maxradius ,maxdpdx ,maxdp )
+
+   arclength = [jsonData{iddata}.pvarclength; jsonData{iddata}.haarclength  ];
+   bolustraveltime = [ (timing(pvidmaxend )-timing(pvidmaxstart )) ; (timing(haidmaxend )-timing(haidmaxstart )) ];
+   vesselspeed = [pvspeed; haspeed];
+   table(vessel ,arclength, bolustraveltime, vesselspeed, meanradius ,meandpdx ,meandp, stdradius ,stddpdx ,stddp  )
 
 end

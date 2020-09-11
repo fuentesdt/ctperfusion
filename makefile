@@ -71,7 +71,7 @@ Processed/%/viewsoln:
 Processed/%/arclengthfiducials.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.gz
-	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nrrd");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(@D)/vesselcenterline.nii.gz");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nrrd");slicer.util.loadVolume("$(@D)/dynamic.nhdr");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(@D)/vesselcenterline.nii.gz");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $(@D)/vesselmask.nii.gz  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/slic.nii.gz:
@@ -201,6 +201,79 @@ Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii
 Processed/%.distance.nii.gz: Processed/%.centerline.nii.gz
 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
 	c3d $@ $< -lstat
+Processed/%/timederiv:
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale 0                                                  -o   Processed/$*/dt.0000.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o  Processed/$*/dt.0001.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0002.nii.gz Processed/$*/dynamicG1C4incsum.0001.nii.gz -scale -1 -add -o  Processed/$*/dt.0002.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0003.nii.gz Processed/$*/dynamicG1C4incsum.0002.nii.gz -scale -1 -add -o  Processed/$*/dt.0003.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0004.nii.gz Processed/$*/dynamicG1C4incsum.0003.nii.gz -scale -1 -add -o  Processed/$*/dt.0004.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0005.nii.gz Processed/$*/dynamicG1C4incsum.0004.nii.gz -scale -1 -add -o  Processed/$*/dt.0005.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0006.nii.gz Processed/$*/dynamicG1C4incsum.0005.nii.gz -scale -1 -add -o  Processed/$*/dt.0006.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0007.nii.gz Processed/$*/dynamicG1C4incsum.0006.nii.gz -scale -1 -add -o  Processed/$*/dt.0007.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0008.nii.gz Processed/$*/dynamicG1C4incsum.0007.nii.gz -scale -1 -add -o  Processed/$*/dt.0008.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0009.nii.gz Processed/$*/dynamicG1C4incsum.0008.nii.gz -scale -1 -add -o  Processed/$*/dt.0009.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0010.nii.gz Processed/$*/dynamicG1C4incsum.0009.nii.gz -scale -1 -add -o  Processed/$*/dt.0010.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0011.nii.gz Processed/$*/dynamicG1C4incsum.0010.nii.gz -scale -1 -add -o  Processed/$*/dt.0011.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0012.nii.gz Processed/$*/dynamicG1C4incsum.0011.nii.gz -scale -1 -add -o  Processed/$*/dt.0012.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0013.nii.gz Processed/$*/dynamicG1C4incsum.0012.nii.gz -scale -1 -add -o  Processed/$*/dt.0013.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0014.nii.gz Processed/$*/dynamicG1C4incsum.0013.nii.gz -scale -1 -add -o  Processed/$*/dt.0014.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0015.nii.gz Processed/$*/dynamicG1C4incsum.0014.nii.gz -scale -1 -add -o  Processed/$*/dt.0015.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0016.nii.gz Processed/$*/dynamicG1C4incsum.0015.nii.gz -scale -1 -add -o  Processed/$*/dt.0016.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0017.nii.gz Processed/$*/dynamicG1C4incsum.0016.nii.gz -scale -1 -add -o  Processed/$*/dt.0017.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0018.nii.gz Processed/$*/dynamicG1C4incsum.0017.nii.gz -scale -1 -add -o  Processed/$*/dt.0018.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0019.nii.gz Processed/$*/dynamicG1C4incsum.0018.nii.gz -scale -1 -add -o  Processed/$*/dt.0019.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0020.nii.gz Processed/$*/dynamicG1C4incsum.0019.nii.gz -scale -1 -add -o  Processed/$*/dt.0020.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0021.nii.gz Processed/$*/dynamicG1C4incsum.0020.nii.gz -scale -1 -add -o  Processed/$*/dt.0021.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0022.nii.gz Processed/$*/dynamicG1C4incsum.0021.nii.gz -scale -1 -add -o  Processed/$*/dt.0022.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0023.nii.gz Processed/$*/dynamicG1C4incsum.0022.nii.gz -scale -1 -add -o  Processed/$*/dt.0023.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0024.nii.gz Processed/$*/dynamicG1C4incsum.0023.nii.gz -scale -1 -add -o  Processed/$*/dt.0024.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0025.nii.gz Processed/$*/dynamicG1C4incsum.0024.nii.gz -scale -1 -add -o  Processed/$*/dt.0025.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0026.nii.gz Processed/$*/dynamicG1C4incsum.0025.nii.gz -scale -1 -add -o  Processed/$*/dt.0026.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0027.nii.gz Processed/$*/dynamicG1C4incsum.0026.nii.gz -scale -1 -add -o  Processed/$*/dt.0027.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0028.nii.gz Processed/$*/dynamicG1C4incsum.0027.nii.gz -scale -1 -add -o  Processed/$*/dt.0028.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0029.nii.gz Processed/$*/dynamicG1C4incsum.0028.nii.gz -scale -1 -add -o  Processed/$*/dt.0029.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0030.nii.gz Processed/$*/dynamicG1C4incsum.0029.nii.gz -scale -1 -add -o  Processed/$*/dt.0030.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0031.nii.gz Processed/$*/dynamicG1C4incsum.0030.nii.gz -scale -1 -add -o  Processed/$*/dt.0031.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4inc.0032.nii.gz    Processed/$*/dynamicG1C4incsum.0031.nii.gz -scale -1 -add -o  Processed/$*/dt.0032.nii.gz
+	c3d -verbose Processed/$*/dynamic.0033.nii.gz           Processed/$*/dynamicG1C4inc.0032.nii.gz    -scale -1 -add -o  Processed/$*/dt.0033.nii.gz
+Processed/%/cmp.nii.gz:
+	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -omc Processed/$*/cmp.nii.gz
+Processed/%/gradient:
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0000.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0001.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0002.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0002.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0003.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0003.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0004.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0004.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0005.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0005.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0006.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0006.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0007.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0007.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0008.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0008.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0009.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0009.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0010.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0010.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0011.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0011.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0012.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0012.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0013.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0013.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0014.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0014.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0015.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0015.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0016.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0016.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0017.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0017.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0018.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0018.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0019.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0019.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0020.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0020.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0021.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0021.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0022.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0022.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0023.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0023.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0024.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0024.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0025.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0025.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0026.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0026.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0027.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0027.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0028.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0028.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0029.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0029.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0030.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0030.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0031.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0031.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4inc.0032.nii.gz    -smooth 1.2vox -grad  -omc Processed/$*/gradient.0032.nii.gz
+	c3d -verbose Processed/$*/dynamic.0033.nii.gz           -smooth 1.2vox -grad  -omc Processed/$*/gradient.0033.nii.gz
+
 Processed/%/dynamicG1C4anatomymask.nrrd: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
