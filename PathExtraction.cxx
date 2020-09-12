@@ -180,6 +180,8 @@ example_gradientdescent(int argc, char * argv[])
       std::cout << "WARNING: Path " << (i + 1) << " contains no points!" << std::endl;
       continue;
     }
+    std::cout << "IdxPoints: " << indexend << std::endl;
+    std::cout << "MeshPoints: " << end << std::endl;
     for (unsigned int i = 0; i < vertexList->Size(); ++i)
     {
       //std::cout << "MeshPoints: " << vertexList->GetElement(i) << std::endl;
@@ -192,6 +194,8 @@ example_gradientdescent(int argc, char * argv[])
       std::cout << "IdxPoints: " << indexout << std::endl;
       std::cout << "MeshPoints: " << pointout << std::endl;
     }
+    std::cout << "IdxPoints: " << indexstart << std::endl;
+    std::cout << "MeshPoints: " << start << std::endl;
  
 
     // Iterate path and convert to image
