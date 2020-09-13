@@ -10,7 +10,7 @@ clean:
 tags:
 	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_SOURCE) .
 
-ATROPOSCMD=/opt/apps/ANTsR/dev//ANTsR_src/ANTsR/src/ANTS/ANTS-build//bin/Atropos -d 3 -c [3,0.0] 
+ATROPOSCMD=/opt/apps/ANTS/dev/install/bin/Atropos -d 3 -c [3,0.0] 
 SLICER=vglrun /opt/apps/slicer/Slicer-4.11.0-2020-09-08-linux-amd64/Slicer
 DYNAMICDATA =  0001 0002 0003 0004 
 
@@ -199,8 +199,11 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 
 Processed/%.pca.nii.gz: Processed/%.slic.nii.gz
 	python pca.py --imagefile $< --outfile $@
+Processed/%.gmm.nii.gz: Processed/%.connected.nii.gz
+	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[15] -x $< -a $(@D)/cmp.00.nii.gz  -a $(@D)/cmp.01.nii.gz  -a $(@D)/cmp.02.nii.gz  -o $@
 Processed/%.slic.nii.gz: Processed/%.connected.nii.gz
-	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $@
+	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $(basename $(basename $@))tmp.nii.gz
+	python combineslic.py  --imagefile $(basename $(basename $@))tmp.nii.gz --outfile $@
 Processed/%.thin.nii.gz: Processed/%.connected.nii.gz
 	./ThinImage $< $@
 Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii.gz
@@ -245,6 +248,7 @@ Processed/%/timederiv:
 	c3d -verbose Processed/$*/dynamic.0033.nii.gz           Processed/$*/dynamicG1C4inc.0032.nii.gz    -scale -1 -add -o  Processed/$*/dt.0033.nii.gz
 Processed/%/cmp.nii.gz:
 	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -omc Processed/$*/cmp.nii.gz
+	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -oo Processed/$*/cmp.%02d.nii.gz
 Processed/%/gradient:
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0000.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0001.nii.gz
