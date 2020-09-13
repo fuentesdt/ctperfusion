@@ -36,6 +36,9 @@ reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA)))
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
 
+clusterrsync:
+	rsync  -v -avz   --include='000?/' --exclude='*Warp.nii.gz'  /rsrch3/ip/dtfuentes/github/ctperfusion/Processed/ Processed/
+
 .PHONY: tags
 # https://www.gnu.org/software/make/manual/html_node/Special-Targets.html
 # https://www.gnu.org/software/make/manual/html_node/Chained-Rules.html#Chained-Rules
@@ -194,6 +197,10 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 
+Processed/%.pca.nii.gz: Processed/%.slic.nii.gz
+	python pca.py --imagefile $< --outfile $@
+Processed/%.slic.nii.gz: Processed/%.connected.nii.gz
+	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $@
 Processed/%.thin.nii.gz: Processed/%.connected.nii.gz
 	./ThinImage $< $@
 Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii.gz
