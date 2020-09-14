@@ -10,7 +10,7 @@ clean:
 tags:
 	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_SOURCE) .
 
-ATROPOSCMD=/opt/apps/ANTS/dev/install/bin/Atropos -d 3 -c [3,0.0] 
+ATROPOSCMD=/opt/apps/ANTS/dev/install/bin/Atropos 
 SLICER=vglrun /opt/apps/slicer/Slicer-4.11.0-2020-09-08-linux-amd64/Slicer
 DYNAMICDATA =  0001 0002 0003 0004 
 
@@ -19,6 +19,7 @@ DYNAMICDATA =  0001 0002 0003 0004
 setup: $(addprefix Processed/,$(addsuffix /setup,$(DYNAMICDATA))) 
 slic: $(addprefix Processed/,$(addsuffix /slic.nii.gz,$(DYNAMICDATA))) 
 roi: $(addprefix Processed/,$(addsuffix /roi.nii.gz,$(DYNAMICDATA))) 
+cmp: $(addprefix Processed/,$(addsuffix /cmp.nii.gz,$(DYNAMICDATA))) 
 anatomymask: $(addprefix Processed/,$(addsuffix /anatomymask.nii.gz,$(DYNAMICDATA))) 
 dynamicmean: $(addprefix Processed/,$(addsuffix /dynamicmean.nrrd,$(DYNAMICDATA))) 
 neighborreg: $(addprefix Processed/,$(addsuffix /dynamicG1C4inc.0000.nii.gz,$(DYNAMICDATA))) 
@@ -30,8 +31,10 @@ sigmoid: $(addprefix Processed/,$(addsuffix /dynamicG1C4anatomymasksigmoid.nii.g
 sigmoidspeed: $(addprefix Processed/,$(addsuffix /sigmoidspeed.nii.gz,$(DYNAMICDATA))) 
 vessel: $(addprefix Processed/,$(addsuffix /vessel.nii.gz,$(DYNAMICDATA))) 
 vesselmask: $(addprefix Processed/,$(addsuffix /vesselmask.nii.gz,$(DYNAMICDATA))) 
+sdt: $(addprefix Processed/,$(addsuffix /sdt.grad.nii.gz,$(DYNAMICDATA))) 
 arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA))) 
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
+vesselpca: $(addprefix Processed/,$(addsuffix /vesselpca.nii.gz,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
@@ -79,8 +82,13 @@ Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.g
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/slic.nii.gz:
 	./itkSLICImageFilter $(@D)/dynamic.0033.nii.gz $@ 20 1
+Processed/%/sdtgrad.nii.gz: Processed/%/sdt.nii.gz Processed/%/vesselmask.nii.gz
+	c3d -verbose $< -grad -omc $(@D)/sdtgradraw.nii.gz -foreach -dup -times -endfor -accum -add -endaccum  -sqrt $(word 2,$^) -binarize -replace 1 0 0 1 -multiply  -o  $(@D)/sdtrms.nii.gz
+	c3d -verbose  $(@D)/sdtrms.nii.gz  -reciprocal -popas A $< -grad  -foreach  -push A -multiply -endfor -omc $@
+Processed/%/sdtvesselpca.nii.gz: Processed/%/sdtgrad.nii.gz Processed/%/vesselpca.nii.gz Processed/%/vesselmask.nii.gz
+	c3d -verbose $(word 3,$^) -binarize -replace 1 0 0 1 -popas C -mcs $< -popas A3 -popas A2 -popas A1 $(word 2,$^) -popas B3 -popas B2 -popas B1  -push A1 -push C  -multiply -push B1 -add  -push A2 -push C  -multiply -push B2 -add  -push A3 -push C  -multiply -push B3 -add -omc $@
 Processed/%/sdt.nii.gz: Processed/%/vesselmask.nii.gz
-	c3d -verbose $<  -threshold 1 1 1 0 -sdt -o $@
+	c3d -verbose $<  -binarize -sdt  -o $@
 Processed/%/dynamicmean.nhdr: 
 	for idfile in $$(seq -f "%04g" 0 33); do  echo python slicnormalization.py --imagefile=$(@D)/dynamic.$$idfile.nii.gz; python slicnormalization.py --imagefile=$(@D)/dynamic.$$idfile.nii.gz;done
 	c3d $(@D)/meandynamic.*.nii.gz -omc $@
@@ -197,10 +205,12 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 
-Processed/%.pca.nii.gz: Processed/%.slic.nii.gz
+Processed/%/vesselpca.nii.gz: Processed/%/vesselgmm.nii.gz
 	python pca.py --imagefile $< --outfile $@
-Processed/%.gmm.nii.gz: Processed/%.connected.nii.gz
-	$(ATROPOSCMD) -m [0.1,1x1x1] -i kmeans[15] -x $< -a $(@D)/cmp.00.nii.gz  -a $(@D)/cmp.01.nii.gz  -a $(@D)/cmp.02.nii.gz  -o $@
+Processed/%/vesselgmm.nii.gz:  Processed/%/hepaticartery.gmm.nii.gz Processed/%/portalvein.gmm.nii.gz 
+	c3d  $(word 2,$^) -shift 100 -replace 100 0 $< -binarize -replace 1 0 0 1 -multiply $< -add -o $@
+Processed/%.gmm.nii.gz: Processed/%.connected.nii.gz 
+	$(ATROPOSCMD) -v 1 -d 3 -c [25,0.001] -m [0.1,1x1x1] -i kmeans[10] -x $< -a $(@D)/cmp.00.nii.gz  -a $(@D)/cmp.01.nii.gz  -a $(@D)/cmp.02.nii.gz  -o $@
 Processed/%.slic.nii.gz: Processed/%.connected.nii.gz
 	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $(basename $(basename $@))tmp.nii.gz
 	python combineslic.py  --imagefile $(basename $(basename $@))tmp.nii.gz --outfile $@
@@ -212,7 +222,7 @@ Processed/%.distance.nii.gz: Processed/%.centerline.nii.gz
 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
 	c3d $@ $< -lstat
 Processed/%/timederiv:
-	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale 0                                                  -o   Processed/$*/dt.0000.nii.gz
+	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale 0                                                  -o  Processed/$*/dt.0000.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o  Processed/$*/dt.0001.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0002.nii.gz Processed/$*/dynamicG1C4incsum.0001.nii.gz -scale -1 -add -o  Processed/$*/dt.0002.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0003.nii.gz Processed/$*/dynamicG1C4incsum.0002.nii.gz -scale -1 -add -o  Processed/$*/dt.0003.nii.gz
@@ -249,6 +259,76 @@ Processed/%/timederiv:
 Processed/%/cmp.nii.gz:
 	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -omc Processed/$*/cmp.nii.gz
 	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -oo Processed/$*/cmp.%02d.nii.gz
+Processed/%/dirderiv:
+	c3d -verbose -mcs Processed/$*/gradient.0000.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0000.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0001.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0001.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0002.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0002.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0003.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0003.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0004.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0004.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0005.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0005.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0006.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0006.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0007.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0007.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0008.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0008.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0009.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0009.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0010.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0010.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0011.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0011.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0012.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0012.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0013.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0013.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0014.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0014.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0015.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0015.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0016.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0016.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0017.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0017.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0018.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0018.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0019.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0019.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0020.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0020.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0021.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0021.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0022.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0022.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0023.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0023.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0024.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0024.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0025.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0025.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0026.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0026.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0027.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0027.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0028.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0028.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0029.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0029.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0030.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0030.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0031.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0031.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0032.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0032.nii.gz
+	c3d -verbose -mcs Processed/$*/gradient.0033.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0033.nii.gz
+Processed/%/velocity.0033.nii.gz:
+	c3d -verbose  Processed/$*/dt.0000.nii.gz -scale -1 Processed/$*/dirderiv.0000.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0000.nii.gz
+	c3d -verbose  Processed/$*/dt.0001.nii.gz -scale -1 Processed/$*/dirderiv.0001.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0001.nii.gz
+	c3d -verbose  Processed/$*/dt.0002.nii.gz -scale -1 Processed/$*/dirderiv.0002.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0002.nii.gz
+	c3d -verbose  Processed/$*/dt.0003.nii.gz -scale -1 Processed/$*/dirderiv.0003.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0003.nii.gz
+	c3d -verbose  Processed/$*/dt.0004.nii.gz -scale -1 Processed/$*/dirderiv.0004.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0004.nii.gz
+	c3d -verbose  Processed/$*/dt.0005.nii.gz -scale -1 Processed/$*/dirderiv.0005.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0005.nii.gz
+	c3d -verbose  Processed/$*/dt.0006.nii.gz -scale -1 Processed/$*/dirderiv.0006.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0006.nii.gz
+	c3d -verbose  Processed/$*/dt.0007.nii.gz -scale -1 Processed/$*/dirderiv.0007.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0007.nii.gz
+	c3d -verbose  Processed/$*/dt.0008.nii.gz -scale -1 Processed/$*/dirderiv.0008.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0008.nii.gz
+	c3d -verbose  Processed/$*/dt.0009.nii.gz -scale -1 Processed/$*/dirderiv.0009.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0009.nii.gz
+	c3d -verbose  Processed/$*/dt.0010.nii.gz -scale -1 Processed/$*/dirderiv.0010.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0010.nii.gz
+	c3d -verbose  Processed/$*/dt.0011.nii.gz -scale -1 Processed/$*/dirderiv.0011.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0011.nii.gz
+	c3d -verbose  Processed/$*/dt.0012.nii.gz -scale -1 Processed/$*/dirderiv.0012.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0012.nii.gz
+	c3d -verbose  Processed/$*/dt.0013.nii.gz -scale -1 Processed/$*/dirderiv.0013.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0013.nii.gz
+	c3d -verbose  Processed/$*/dt.0014.nii.gz -scale -1 Processed/$*/dirderiv.0014.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0014.nii.gz
+	c3d -verbose  Processed/$*/dt.0015.nii.gz -scale -1 Processed/$*/dirderiv.0015.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0015.nii.gz
+	c3d -verbose  Processed/$*/dt.0016.nii.gz -scale -1 Processed/$*/dirderiv.0016.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0016.nii.gz
+	c3d -verbose  Processed/$*/dt.0017.nii.gz -scale -1 Processed/$*/dirderiv.0017.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0017.nii.gz
+	c3d -verbose  Processed/$*/dt.0018.nii.gz -scale -1 Processed/$*/dirderiv.0018.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0018.nii.gz
+	c3d -verbose  Processed/$*/dt.0019.nii.gz -scale -1 Processed/$*/dirderiv.0019.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0019.nii.gz
+	c3d -verbose  Processed/$*/dt.0020.nii.gz -scale -1 Processed/$*/dirderiv.0020.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0020.nii.gz
+	c3d -verbose  Processed/$*/dt.0021.nii.gz -scale -1 Processed/$*/dirderiv.0021.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0021.nii.gz
+	c3d -verbose  Processed/$*/dt.0022.nii.gz -scale -1 Processed/$*/dirderiv.0022.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0022.nii.gz
+	c3d -verbose  Processed/$*/dt.0023.nii.gz -scale -1 Processed/$*/dirderiv.0023.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0023.nii.gz
+	c3d -verbose  Processed/$*/dt.0024.nii.gz -scale -1 Processed/$*/dirderiv.0024.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0024.nii.gz
+	c3d -verbose  Processed/$*/dt.0025.nii.gz -scale -1 Processed/$*/dirderiv.0025.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0025.nii.gz
+	c3d -verbose  Processed/$*/dt.0026.nii.gz -scale -1 Processed/$*/dirderiv.0026.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0026.nii.gz
+	c3d -verbose  Processed/$*/dt.0027.nii.gz -scale -1 Processed/$*/dirderiv.0027.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0027.nii.gz
+	c3d -verbose  Processed/$*/dt.0028.nii.gz -scale -1 Processed/$*/dirderiv.0028.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0028.nii.gz
+	c3d -verbose  Processed/$*/dt.0029.nii.gz -scale -1 Processed/$*/dirderiv.0029.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0029.nii.gz
+	c3d -verbose  Processed/$*/dt.0030.nii.gz -scale -1 Processed/$*/dirderiv.0030.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0030.nii.gz
+	c3d -verbose  Processed/$*/dt.0031.nii.gz -scale -1 Processed/$*/dirderiv.0031.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0031.nii.gz
+	c3d -verbose  Processed/$*/dt.0032.nii.gz -scale -1 Processed/$*/dirderiv.0032.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0032.nii.gz
+	c3d -verbose  Processed/$*/dt.0033.nii.gz -scale -1 Processed/$*/dirderiv.0033.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0033.nii.gz
 Processed/%/gradient:
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0000.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0001.nii.gz
@@ -285,6 +365,11 @@ Processed/%/gradient:
 	c3d -verbose Processed/$*/dynamicG1C4inc.0032.nii.gz    -smooth 1.2vox -grad  -omc Processed/$*/gradient.0032.nii.gz
 	c3d -verbose Processed/$*/dynamic.0033.nii.gz           -smooth 1.2vox -grad  -omc Processed/$*/gradient.0033.nii.gz
 
+Processed/%/velocity.nhdr: Processed/%/velocity.0033.nii.gz
+	c3d -verbose $(@D)/velocity.00??.nii.gz  -omc $(basename $@).nhdr
+	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
+	echo vglrun itksnap -g Processed/$*/velocity.nhdr -s Processed/$*/vesselgmm.nii.gz  -o Processed/$*/dt.0009.nii.gz Processed/$*/dirderiv.0009.nii.gz Processed/$*/dt.0010.nii.gz Processed/$*/dirderiv.0010.nii.gz
+	c3d -verbose  Processed/$*/vesselgmm.nii.gz -popas A -mcs  Processed/$*/velocity.nhdr   -foreach -dup -times -sqrt -dup -thresh 0 50 1 0 -multiply   -push A  -lstat -pop -endfor > $(basename $@).lstat
 Processed/%/dynamicG1C4anatomymask.nrrd: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
