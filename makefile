@@ -36,7 +36,7 @@ sdt: $(addprefix Processed/,$(addsuffix /sdt.grad.nii.gz,$(DYNAMICDATA)))
 arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA))) 
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
 vesselpca: $(addprefix Processed/,$(addsuffix /sdtvesselpca.nii.gz,$(DYNAMICDATA))) 
-velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) 
+velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /velocity.csv,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
