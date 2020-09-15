@@ -367,11 +367,14 @@ Processed/%/gradient.0033.nii.gz:
 	c3d -verbose Processed/$*/dynamicG1C4inc.0032.nii.gz    -smooth 1.2vox -grad  -omc Processed/$*/gradient.0032.nii.gz
 	c3d -verbose Processed/$*/dynamic.0033.nii.gz           -smooth 1.2vox -grad  -omc Processed/$*/gradient.0033.nii.gz
 
+Processed/%/velocity.csv: 
+	for idfile in $$(seq -f "%04g" 0 33); do  echo $$idfile; c3d Processed/$*/velocity.$$idfile.nii.gz -dup -times -sqrt -dup -thresh 0 50 1 0 -multiply  Processed/$*/vesselgmm.nii.gz -lstat > Processed/$*/velocity.$$idfile.txt &&  sed "s/^\s\+/$*,vesselgmm.nii.gz,$$idfile,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" Processed/$*/velocity.$$idfile.txt  > Processed/$*/velocity.$$idfile.csv ; done
+	for idfile in $$(seq -f "%04g" 0 33); do  sed '1d' Processed/$*/velocity.$$idfile.csv; done > $@; sed -i "1 i InstanceUID,SegmentationID,FeatureID,LabelID,Mean,StdD,Max,Min,Count,Vol.mm.3,ExtentX,ExtentY,ExtentZ"  $@
+
 Processed/%/velocity.nhdr: Processed/%/velocity.0033.nii.gz
 	c3d -verbose $(@D)/velocity.00??.nii.gz  -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
 	echo vglrun itksnap -g Processed/$*/velocity.nhdr -s Processed/$*/vesselgmm.nii.gz  -o Processed/$*/dt.0009.nii.gz Processed/$*/dirderiv.0009.nii.gz Processed/$*/dt.0010.nii.gz Processed/$*/dirderiv.0010.nii.gz
-	c3d -verbose  Processed/$*/vesselgmm.nii.gz -popas A -mcs  Processed/$*/velocity.nhdr   -foreach -dup -times -sqrt -dup -thresh 0 50 1 0 -multiply   -push A  -lstat -pop -endfor > $(basename $@).lstat
 Processed/%/dynamicG1C4anatomymask.nrrd: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
