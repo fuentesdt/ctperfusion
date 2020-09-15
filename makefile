@@ -11,7 +11,8 @@ tags:
 	ctags -R --langmap=c++:+.txx --langmap=c++:+.cl $(ITK_SOURCE) .
 
 ATROPOSCMD=/opt/apps/ANTS/dev/install/bin/Atropos 
-SLICER=vglrun /opt/apps/slicer/Slicer-4.11.0-2020-09-08-linux-amd64/Slicer
+#SLICER=vglrun /opt/apps/slicer/Slicer-4.11.0-2020-09-08-linux-amd64/Slicer
+SLICER=vglrun /opt/apps/slicer/Slicer-4.10.2-linux-amd64/Slicer
 DYNAMICDATA =  0001 0002 0003 0004 
 
 
@@ -34,7 +35,8 @@ vesselmask: $(addprefix Processed/,$(addsuffix /vesselmask.nii.gz,$(DYNAMICDATA)
 sdt: $(addprefix Processed/,$(addsuffix /sdt.grad.nii.gz,$(DYNAMICDATA))) 
 arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA))) 
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
-vesselpca: $(addprefix Processed/,$(addsuffix /vesselpca.nii.gz,$(DYNAMICDATA))) 
+vesselpca: $(addprefix Processed/,$(addsuffix /sdtvesselpca.nii.gz,$(DYNAMICDATA))) 
+velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 SOLUTIONLIST =  solution globalid meansolution meanglobalid
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
@@ -77,7 +79,7 @@ Processed/%/viewsoln:
 Processed/%/arclengthfiducials.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.gz
-	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nrrd");slicer.util.loadVolume("$(@D)/dynamic.nhdr");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(@D)/vesselcenterline.nii.gz");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nhdr");slicer.util.loadVolume("$(@D)/dynamic.nhdr");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $(@D)/vesselmask.nii.gz  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/slic.nii.gz:
@@ -221,7 +223,7 @@ Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii
 Processed/%.distance.nii.gz: Processed/%.centerline.nii.gz
 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
 	c3d $@ $< -lstat
-Processed/%/timederiv:
+Processed/%/dt.0033.nii.gz:
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale 0                                                  -o  Processed/$*/dt.0000.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz Processed/$*/dynamicG1C4incsum.0000.nii.gz -scale -1 -add -o  Processed/$*/dt.0001.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0002.nii.gz Processed/$*/dynamicG1C4incsum.0001.nii.gz -scale -1 -add -o  Processed/$*/dt.0002.nii.gz
@@ -259,7 +261,7 @@ Processed/%/timederiv:
 Processed/%/cmp.nii.gz:
 	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -omc Processed/$*/cmp.nii.gz
 	c3d -verbose Processed/$*/dynamic.0000.nii.gz -cmp   -oo Processed/$*/cmp.%02d.nii.gz
-Processed/%/dirderiv:
+Processed/%/dirderiv.0033.nii.gz: Processed/%/sdtvesselpca.nii.gz Processed/%/gradient.0033.nii.gz
 	c3d -verbose -mcs Processed/$*/gradient.0000.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0000.nii.gz
 	c3d -verbose -mcs Processed/$*/gradient.0001.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0001.nii.gz
 	c3d -verbose -mcs Processed/$*/gradient.0002.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0002.nii.gz
@@ -294,7 +296,7 @@ Processed/%/dirderiv:
 	c3d -verbose -mcs Processed/$*/gradient.0031.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0031.nii.gz
 	c3d -verbose -mcs Processed/$*/gradient.0032.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0032.nii.gz
 	c3d -verbose -mcs Processed/$*/gradient.0033.nii.gz -popas A3 -popas A2 -popas A1 Processed/$*/sdtvesselpca.nii.gz -popas B3 -popas B2 -popas B1  -push A1 -push B1 -multiply -push A2 -push B2 -multiply -push A1 -push B1 -multiply -add -add -o Processed/$*/dirderiv.0033.nii.gz
-Processed/%/velocity.0033.nii.gz:
+Processed/%/velocity.0033.nii.gz: Processed/%/dt.0033.nii.gz Processed/%/dirderiv.0033.nii.gz
 	c3d -verbose  Processed/$*/dt.0000.nii.gz -scale -1 Processed/$*/dirderiv.0000.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0000.nii.gz
 	c3d -verbose  Processed/$*/dt.0001.nii.gz -scale -1 Processed/$*/dirderiv.0001.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0001.nii.gz
 	c3d -verbose  Processed/$*/dt.0002.nii.gz -scale -1 Processed/$*/dirderiv.0002.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0002.nii.gz
@@ -329,7 +331,7 @@ Processed/%/velocity.0033.nii.gz:
 	c3d -verbose  Processed/$*/dt.0031.nii.gz -scale -1 Processed/$*/dirderiv.0031.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0031.nii.gz
 	c3d -verbose  Processed/$*/dt.0032.nii.gz -scale -1 Processed/$*/dirderiv.0032.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0032.nii.gz
 	c3d -verbose  Processed/$*/dt.0033.nii.gz -scale -1 Processed/$*/dirderiv.0033.nii.gz  -reciprocal -multiply -clip -1000 1000 -o  Processed/$*/velocity.0033.nii.gz
-Processed/%/gradient:
+Processed/%/gradient.0033.nii.gz:
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0000.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0000.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0001.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0001.nii.gz
 	c3d -verbose Processed/$*/dynamicG1C4incsum.0002.nii.gz -smooth 1.2vox -grad  -omc Processed/$*/gradient.0002.nii.gz
