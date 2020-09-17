@@ -380,6 +380,9 @@ Processed/%/dynamicG1C4anatomymask.nrrd:
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
 	./ImageReadWrite $(basename $@).nhdr  $@
 	@echo vglrun itksnap -g $@ -s $(@D)/anatomymask.nii.gz
+
+Processed/%/ktrans.nii.gz: Processed/%/dynamicG1C4anatomymask.nrrd
+	/rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 90 --computeFpv --roiMask $(@D)/mask.nii.gz --aifMask $(@D)/aif.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/auc.nii.gz  --BATCalculationMode UseConstantBAT --constantBAT 0 --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nii.gz  --fitted  $(@D)/fitted.nii.gz  --outputDiagnostics  $(@D)/diagnostics.nii.gz $<
 Processed/%/dynamicG1C4anatomymasksub.nrrd: 
 	c3d -verbose $(@D)/dynamicG1C4incsum.0000.nii.gz -popas A $(@D)/dynamicG1C4incsum.00??.nii.gz $(@D)/dynamicG1C4inc.0032.nii.gz $(@D)/dynamic.0033.nii.gz  -foreach  -push A -scale -1 -add -endfor -omc $(basename $@).nhdr
 	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
