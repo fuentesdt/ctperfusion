@@ -8,7 +8,7 @@ end
 
 for idata = 1:1
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
-inputfilelist = ['' "mean" ];
+inputfilelist = [ "G1C4anatomymask" ];
 for memberID = inputfilelist 
 
 
