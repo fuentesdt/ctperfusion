@@ -101,7 +101,6 @@ saveas(handle,OutputAif ,'png')
 % sum(abs(aif(:,1) - double(rawdce(:,290,274,71))))
 
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
-
 % TODO take avg ? 
 modelaif =aif(:,1)
 % global search residual
@@ -114,6 +113,10 @@ for iii = 1:rsdsize(1)
     residual(iii,:,:,:) = residual(iii,:,:,:) + abs(double(rawdce(kkk,:,:,:)) - modelaif(max(kkk-iii,1)));
   end
 end 
+
+[c,lags] = xcorr(rawdce(:,225,295,72),modelaif);
+figure(2);stem(lags,c)
+
 
 %% dbg
 %% residual(:,290,274,71)  = 0;
