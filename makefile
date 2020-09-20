@@ -208,15 +208,18 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 
-Processed/%/vesselpca.nii.gz: Processed/%/vesselgmm.nii.gz
+Processed/%/vesselpca.nii.gz: Processed/%/vesselgmm.nii.gz 
 	python pca.py --imagefile $< --outfile $@
 Processed/%/vesselgmm.nii.gz:  Processed/%/hepaticartery.gmm.nii.gz Processed/%/portalvein.gmm.nii.gz 
 	c3d  $(word 2,$^) -shift 100 -replace 100 0 $< -binarize -replace 1 0 0 1 -multiply $< -add -o $@
+Processed/%/vesselthin.nii.gz:  Processed/%/hepaticartery.thin.nii.gz Processed/%/portalvein.thin.nii.gz 
+	c3d $^ -add -binarize -o $@
 Processed/%.gmm.nii.gz: Processed/%.connected.nii.gz 
-	$(ATROPOSCMD) -v 1 -d 3 -c [25,0.001] -m [0.1,1x1x1] -i kmeans[10] -x $< -a $(@D)/cmp.00.nii.gz  -a $(@D)/cmp.01.nii.gz  -a $(@D)/cmp.02.nii.gz  -o $@
-Processed/%.slic.nii.gz: Processed/%.connected.nii.gz
-	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $(basename $(basename $@))tmp.nii.gz
-	python combineslic.py  --imagefile $(basename $(basename $@))tmp.nii.gz --outfile $@
+	$(ATROPOSCMD) -v 1 -d 3 -c [25,0.001] -m [0.1,1x1x1] -i kmeans[9] -x $< -a $(@D)/cmp.00.nii.gz  -a $(@D)/cmp.01.nii.gz  -a $(@D)/cmp.02.nii.gz  -o $@
+Processed/%.slic.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii.gz
+	c3d -verbose $< -binarize $(@D)/slic.nii.gz -multiply -o $(basename $(basename $@))tmp1.nii.gz
+	python combineslic.py  --imagefile $(basename $(basename $@))tmp1.nii.gz --outfile $(basename $(basename $@))tmp2.nii.gz
+	c3d -verbose $(word 2,$^) -binarize $(basename $(basename $@))tmp2.nii.gz -multiply -o $@
 Processed/%.thin.nii.gz: Processed/%.connected.nii.gz
 	./ThinImage $< $@
 Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii.gz

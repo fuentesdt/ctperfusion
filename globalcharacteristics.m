@@ -114,8 +114,17 @@ for iii = 1:rsdsize(1)
   end
 end 
 
-[c,lags] = xcorr(rawdce(:,225,295,72),modelaif);
-figure(2);stem(lags,c)
+% TODO - vectorize
+nccglobalidx = zeros(size(rawdce,2),size(rawdce,3),size(rawdce,4));
+for iii = 1:size(rawdce,2)
+  for jjj = 1:size(rawdce,3)
+    for kkk = 1:size(rawdce,4)
+       [ncc,lags] = xcorr(rawdce(:,iii,jjj,kkk),modelaif,'normalize');
+       [maxncc, nccidx ] =  max(ncc);
+       nccglobalidx(iii,jjj,kkk)  = lags(nccidx);
+    end
+  end
+end
 
 
 %% dbg
