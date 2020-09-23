@@ -65,8 +65,10 @@ Processed/%/anatomymask.nii.gz: Processed/%/table.nii.gz
 	c3d $@ -comp -thresh 1 1 1 0 -type uchar -o  $@
 	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $@
 
+Processed/%/smoothmask.nii.gz: Processed/%/mask.nii.gz
+	c3d -verbose $< -binarize  -smooth 1x1x1vox -o $@ -grad -oo $(@D)/smoothgrad%02d.nii.gz
 Processed/%/roi.nii.gz: Processed/%/mask.nii.gz
-	c3d $< -binarize  -dilate 1 20x20x20vox -type uchar -o $@
+	c3d -verbose $< -binarize  -dilate 1 20x20x20vox -type uchar -o $@
 Processed/%/viewroi: Processed/%/roi.nii.gz
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
 Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
