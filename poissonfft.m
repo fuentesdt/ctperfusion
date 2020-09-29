@@ -4,18 +4,20 @@ close all
 
 infomask = niftiinfo('Processed/0001/smoothmask.nii.gz');
 vol3d = niftiread(infomask);
+nsize = infomask.ImageSize;
+spacing = infomask.PixelDimensions;
 
-infomaskgradx = niftiinfo('Processed/0001/smoothgrad01.nii.gz');
+infomaskgradx = niftiinfo('Processed/0001/smoothgrad00.nii.gz');
 maskgradx = niftiread(infomaskgradx );
 
 infograd = niftiinfo('Processed/0001/testgrad.nii.gz');
-grad3d = .1* single(niftiread(infograd));
+grad3d = 10* single(niftiread(infograd));
 
-[kX kY kZ ] = ndgrid([1:infomask.ImageSize(1)] ,[1:infomask.ImageSize(2)],[1:infomask.ImageSize(3)]);
+[kX kY kZ ] = ndgrid([1:nsize(1)] ,[1:nsize(2)],[1:nsize(3)]);
 
-myeps = 1.e-4;
+myeps = 1.e-3;
 
-mydenom = 4 * (  sin(pi*(kX-1)/infomask.ImageSize(1)).^2 + sin(pi*(kY-1)/infomask.ImageSize(2)).^2 + sin(pi*(kZ-1)/infomask.ImageSize(3)).^2 ).^(-1);
+mydenom = 4 * (  sin(pi*(kX-1)/nsize(1)).^2/spacing(1) + sin(pi*(kY-1)/nsize(2)).^2/spacing(2)  + sin(pi*(kZ-1)/nsize(3)).^2/spacing(3)  ).^(-1);
 mydenom (1,1,1) = 0;
 maskinverse = (vol3d+myeps).^(-1);
 
