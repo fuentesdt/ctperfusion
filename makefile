@@ -36,7 +36,7 @@ sdt: $(addprefix Processed/,$(addsuffix /sdt.grad.nii.gz,$(DYNAMICDATA)))
 arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA))) 
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
 surfacearea: $(addprefix Processed/,$(addsuffix /hepaticartery.surfacearea.csv,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.surfacearea.csv,$(DYNAMICDATA))) 
-laplacebc: $(addprefix Processed/,$(addsuffix /laplacebc.nii.gz,$(DYNAMICDATA))) 
+laplacebc: $(addprefix Processed/,$(addsuffix /laplacebc.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /smoothmask.nii.gz,$(DYNAMICDATA))) 
 vesselpca: $(addprefix Processed/,$(addsuffix /sdtvesselpca.nii.gz,$(DYNAMICDATA))) 
 velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /velocity.csv,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
@@ -69,7 +69,8 @@ Processed/%/anatomymask.nii.gz: Processed/%/table.nii.gz
 	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $@
 
 Processed/%/smoothmask.nii.gz: Processed/%/mask.nii.gz
-	c3d -verbose $< -binarize  -smooth 2x2x2vox -o $@ -grad -oo $(@D)/smoothgrad%02d.nii.gz
+	c3d -verbose $< -binarize  -smooth 2x2x2vox -o $@ -grad -foreach -dup -times -endfor -accum -add -endaccum -sqrt -o $(@D)/smoothgrad.nii.gz
+
 Processed/%/roi.nii.gz: Processed/%/mask.nii.gz
 	c3d -verbose $< -binarize  -dilate 1 20x20x20vox -type uchar -o $@
 Processed/%/viewroi: Processed/%/roi.nii.gz
@@ -208,7 +209,7 @@ Processed/0004/hepaticartery.connected.nii.gz:
 Processed/%/arclength.json: Processed/%/sigmoidspeed.nii.gz Processed/%/arclengthfiducials.nii.gz
 	python PathExtraction.py $(basename $@)  $^ 
 Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Processed/%/portalvein.connected.nii.gz 
-	c3d -verbose$(word 2,$^) -replace 255 2  $< -binarize -replace 1 0 0 1 -multiply $< -binarize  -add -o $@
+	c3d -verbose $(word 2,$^) -replace 255 2  $< -binarize -replace 1 0 0 1 -multiply $< -binarize  -add -o $@
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $(@D)/vessel.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
