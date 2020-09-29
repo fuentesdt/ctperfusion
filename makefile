@@ -214,7 +214,7 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
 Processed/%/laplacebc.nii.gz: Processed/%/vesselmask.nii.gz Processed/%/mask.nii.gz Processed/%/PeakGradient3param/bv.nii.gz
-	c3d $(word 3,$^) $< $(word 2,$^) -binarize -dup -multiply -add -o $@ -lstat > Processed/$*/laplacebc.txt && sed "s/^\s\+/*,$(<F),$(word 3,$(^F)),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*/laplacebc.txt  > Processed/$*/laplacebc.csv 
+	c3d $(word 3,$^) $< $(word 2,$^) -binarize  -erode 1 1x1x1vox -multiply $(word 2,$^) -binarize -add -o $@ -lstat > Processed/$*/laplacebc.txt && sed "s/^\s\+/$*,$(<F),$(word 3,$(^F)),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*/laplacebc.txt  > Processed/$*/laplacebc.csv 
 	echo vglrun itksnap -g $(word 3,$^)  -s $@
 Processed/%/vesselpca.nii.gz: Processed/%/vesselgmm.nii.gz 
 	python pca.py --imagefile $< --outfile $@

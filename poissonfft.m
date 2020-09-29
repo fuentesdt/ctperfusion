@@ -2,11 +2,11 @@ clear all
 close all
 
 % read label stats
-hadata{1} = readtable('Processed/0001/hepaticartery.surfacearea.csv')
-hasurface area = hadata{1}.Vol_mm_3(hadata{1}.LabelID==1)
-pvdata{1} = readtable('Processed/0001/portalvein.surfacearea.csv')
-pvsurface area = pvdata{1}.Vol_mm_3(pvdata{1}.LabelID==1)
-lpdata{1} = readtable('Processed/0001/laplacebc.csv')
+hadata{1} = readtable('Processed/0001/hepaticartery.surfacearea.csv');
+hasurfacearea = hadata{1}.Vol_mm_3(hadata{1}.LabelID==1)
+pvdata{1} = readtable('Processed/0001/portalvein.surfacearea.csv');
+pvsurfacearea = pvdata{1}.Vol_mm_3(pvdata{1}.LabelID==1)
+lpdata{1} = readtable('Processed/0001/laplacebc.csv');
 bvmeasurement = lpdata{1}.Mean(lpdata{1}.LabelID==1)
 
 % read mask info
@@ -23,8 +23,8 @@ maskgrad = niftiread(infograd);
 infolaplacebc = niftiinfo('Processed/0001/laplacebc.nii.gz');
 masklaplacebc = niftiread(infolaplacebc );
 masklaplacebc(masklaplacebc  == 1) = 0;
-masklaplacebc(masklaplacebc  == 2) = 100;
-masklaplacebc(masklaplacebc  == 3) =-100;
+masklaplacebc(masklaplacebc  == 2) = 10;
+masklaplacebc(masklaplacebc  == 3) =-10;
 
 % setup fourier coefficients
 [kX kY kZ ] = ndgrid([1:nsize(1)] ,[1:nsize(2)],[1:nsize(3)]);
@@ -42,7 +42,7 @@ disp('ifftn');
 solnvol3d = ifftn(fftlaplace);
 
 infoout = infomask;
-infoout.Filename = 'testifft';
+infoout.Filename = 'Processed/0001/ifft';
 infoout.Datatype = 'single';
 niftiwrite(solnvol3d  ,infoout.Filename,infoout,'Compressed',true)
 
