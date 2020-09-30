@@ -37,6 +37,7 @@ arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA)))
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
 surfacearea: $(addprefix Processed/,$(addsuffix /hepaticartery.surfacearea.csv,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.surfacearea.csv,$(DYNAMICDATA))) 
 laplacebc: $(addprefix Processed/,$(addsuffix /laplacebc.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /smoothmask.nii.gz,$(DYNAMICDATA))) 
+ifft: $(addprefix Processed/,$(addsuffix /ifft.nii.gz,$(DYNAMICDATA)))
 vesselpca: $(addprefix Processed/,$(addsuffix /sdtvesselpca.nii.gz,$(DYNAMICDATA))) 
 velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /velocity.csv,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
@@ -68,8 +69,8 @@ Processed/%/anatomymask.nii.gz: Processed/%/table.nii.gz
 	c3d $@ -comp -thresh 1 1 1 0 -type uchar -o  $@
 	echo vglrun itksnap -g $(@D)/dynamic.nrrd -s $@
 
-Processed/%/smoothmask.nii.gz: Processed/%/mask.nii.gz
-	c3d -verbose $< -binarize  -smooth 2x2x2vox -o $@ -grad -foreach -dup -times -endfor -accum -add -endaccum -sqrt -o $(@D)/smoothgrad.nii.gz
+Processed/%/smoothmask.nii.gz: Processed/%/mask.nii.gz  Processed/%/vesselmask.nii.gz
+	c3d -verbose $< -binarize $(word 2,$^) -binarize -replace 1 0 0 1  -multiply -replace 0 -1 -smooth 1x1x1vox -o $@ -grad -foreach -dup -times -endfor -accum -add -endaccum -sqrt -o $(@D)/smoothgrad.nii.gz
 
 Processed/%/roi.nii.gz: Processed/%/mask.nii.gz
 	c3d -verbose $< -binarize  -dilate 1 20x20x20vox -type uchar -o $@
@@ -213,8 +214,10 @@ Processed/%/vesselmask.nii.gz: Processed/%/hepaticartery.connected.nii.gz Proces
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksub.nhdr -s $(@D)/vessel.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz  -s $@  -o  $(@D)/vessel.nii.gz  $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz
 
+Processed/%/ifft.nii.gz: Processed/%/laplacebc.nii.gz Processed/%/hepaticartery.surfacearea.csv Processed/%/portalvein.surfacearea.csv
+	matlab -nodesktop -r "poissonfft('$(@D));exit"
 Processed/%/laplacebc.nii.gz: Processed/%/vesselmask.nii.gz Processed/%/mask.nii.gz Processed/%/PeakGradient3param/bv.nii.gz
-	c3d $(word 3,$^) $< $(word 2,$^) -binarize  -erode 1 1x1x1vox -multiply $(word 2,$^) -binarize -add -o $@ -lstat > Processed/$*/laplacebc.txt && sed "s/^\s\+/$*,$(<F),$(word 3,$(^F)),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*/laplacebc.txt  > Processed/$*/laplacebc.csv 
+	c3d $(word 3,$^) $< $(word 2,$^) -binarize  -erode 1 1x1x1vox -multiply $(word 2,$^) -binarize -dup -dilate 1 2x2x1vox -add -add -type uchar -o $@ -lstat > Processed/$*/laplacebc.txt && sed "s/^\s\+/$*,$(<F),$(word 3,$(^F)),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*/laplacebc.txt  > Processed/$*/laplacebc.csv 
 	echo vglrun itksnap -g $(word 3,$^)  -s $@
 Processed/%/vesselpca.nii.gz: Processed/%/vesselgmm.nii.gz 
 	python pca.py --imagefile $< --outfile $@
