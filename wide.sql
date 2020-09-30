@@ -33,6 +33,7 @@ select InstanceUID,LabelID,`Vol.mm.3`,
             max(CASE WHEN SegmentationID = 'meansolution.nii.gz' THEN Mean ELSE NULL END) meansolution,
             max(CASE WHEN SegmentationID = 'solution.nii.gz'     THEN Mean ELSE NULL END) solution
 from lstat
+where InstanceUID != 'InstanceUID'
 GROUP BY    InstanceUID,LabelID;
 
 .quit

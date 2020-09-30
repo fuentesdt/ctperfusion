@@ -80,7 +80,7 @@ Processed/%/viewroi: Processed/%/roi.nii.gz
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $<
 Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
-Processed/%/viewmask: Processed/%/anatomymask.nii.gz
+Processed/%/viewmask: Processed/%/mask.nii.gz
 	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $<  -o $(@D)/dynamicG1C4anatomymaskmip.nii.gz  $(@D)/ConstantBAT3param/bv.nii.gz   $(@D)/ConstantBAT3param/ktrans.nii.gz       $(@D)/ConstantBAT3param/ve.nii.gz
 Processed/%/viewslic: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz
