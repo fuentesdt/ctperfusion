@@ -1,6 +1,4 @@
-clear all
-close all
-function poissonfft( iofilepath, mynetwork, outputpath, gpuid ,ExecutionEnvironment  )
+function poissonfft( iofilepath )
 %iofilepath = 'Processed/0001';
 disp( ['iofilepath  = ''',iofilepath ,''';']);      
 
@@ -75,3 +73,4 @@ infoout.Filename = fullfile(iofilepath,'ifft');
 infoout.Datatype = 'single';
 niftiwrite(possolnvol3d - negsolnvol3d  ,infoout.Filename,infoout,'Compressed',true)
 
+end
