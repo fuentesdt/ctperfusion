@@ -81,7 +81,7 @@ Processed/%/viewroi: Processed/%/roi.nii.gz
 Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewmask: Processed/%/mask.nii.gz
-	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $<  -o $(@D)/dynamicG1C4anatomymaskmip.nii.gz  $(@D)/ConstantBAT3param/bv.nii.gz   $(@D)/ConstantBAT3param/ktrans.nii.gz       $(@D)/ConstantBAT3param/ve.nii.gz
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $<  -o $(@D)/dynamicG1C4anatomymaskmip.nii.gz  $(@D)/ConstantBAT3param/bv.nii.gz   $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/diagnostics.nii.gz
 Processed/%/viewslic: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz
 Processed/%/viewsoln: 
@@ -418,7 +418,7 @@ Processed/%/PeakGradient3param/ktrans.nii.gz:
 	/rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling --fpv0 .1 --ve0 .1 --ktrans0 3. --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 90 --computeFpv --roiMask $(dir $(@D))/mask.nii.gz --aifMask $(dir $(@D))/hepaticartery.connected.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/bv.nii.gz  --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nrrd  --fitted  $(@D)/fitted.nrrd  --outputDiagnostics  $(@D)/diagnostics.nii.gz Processed/$*/dynamicG1C4anatomymask.nrrd
 Processed/%/ConstantBAT3param/ktrans.nii.gz:
 	mkdir -p $(@D)
-	/rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling --fpv0 .1 --ve0 .1 --ktrans0 3. --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 90 --computeFpv --roiMask $(dir $(@D))/anatomymask.nii.gz --aifMask $(dir $(@D))/aif.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/bv.nii.gz  --BATCalculationMode UseConstantBAT --constantBAT 0 --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nrrd  --fitted  $(@D)/fitted.nrrd  --outputDiagnostics  $(@D)/diagnostics.nii.gz Processed/$*/dynamicG1C4anatomymask.nrrd
+	if  [ $* -eq 4 ] ; then INITIALGUESS="--fpv0 .1 --ve0 .1 --ktrans0 3."  ; elif  [ $* -eq 2 ] ; then INITIALGUESS="--fpv0 .1 --ve0 .1 --ktrans0 2."  ;else INITIALGUESS="--fpv0 .1 --ve0 .1 --ktrans0 .3";  fi; echo $$INITIALGUESS; /rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling $$INITIALGUESS --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 90 --computeFpv --roiMask $(dir $(@D))/anatomymask.nii.gz --aifMask $(dir $(@D))/aif.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/bv.nii.gz  --BATCalculationMode UseConstantBAT --constantBAT 0 --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nrrd  --fitted  $(@D)/fitted.nrrd  --outputDiagnostics  $(@D)/diagnostics.nii.gz Processed/$*/dynamicG1C4anatomymask.nrrd
 	echo vglrun itksnap -g  $@ -s $(dir $(@D))/anatomymask.nii.gz -o $(dir $(@D))/aif.nii.gz $(@D)/auc.nii.gz $(@D)/bat.nii.gz $(@D)/diagnostics.nii.gz $(@D)/fpv.nii.gz $(@D)/maxslope.nii.gz $(@D)/rsquared.nii.gz $(@D)/ve.nii.gz
 	echo $(SLICER)  --python-code 'slicer.util.loadVolume("$<");slicer.util.loadVolume("$(@D)/fitted.nrrd");slicer.util.loadVolume("$(@D)/concentrations.nrrd");slicer.util.loadVolume("$@");slicer.util.loadVolume("$(@D)/ve.nii.gz");slicer.util.loadVolume("$(@D)/fpv.nii.gz");slicer.util.loadVolume("$(@D)/diagnostics.nii.gz");slicer.util.loadLabelVolume("$(dir $(@D))/mask.nii.gz");slicer.util.loadLabelVolume("$(dir $(@D))/aif.nii.gz");'
 Processed/%/PeakGradient2param/ktrans.nii.gz:
@@ -528,17 +528,8 @@ Processed/0001/velocity.nii.gz:
 Processed/0001/outline.nii.gz: 
 	c3d -verbose Processed/0001/vesselmask.nii.gz -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
 
-Processed/0001/slicmask.nii.gz: Processed/0001/slic.nii.gz Processed/0001/mask.nii.gz
-	#c3d $^ -binarize  -multiply -replace 1685 1 1710 1 1034 1 1084 1 2286 1 1656 1 -o $@
+Processed/%/slicmask.nii.gz: Processed/%/slic.nii.gz Processed/%/mask.nii.gz
 	c3d $^ -binarize  -multiply  -o $@
-Processed/0002/slicmask.nii.gz: Processed/0002/slic.nii.gz Processed/0002/mask.nii.gz
-	c3d $^ -binarize  -multiply -replace 1710 1 1685 1 2286 1 1660 1 -o $@
-Processed/0003/slicmask.nii.gz: Processed/0003/slic.nii.gz Processed/0003/mask.nii.gz
-	c3d $^ -binarize  -multiply -replace 2852 1 1586  1 2213  1 2211 1 2212 1 -o $@
-Processed/0004/slicmask.nii.gz: Processed/0004/slic.nii.gz Processed/0004/mask.nii.gz
-	c3d $^ -binarize  -multiply -replace 3071 1 1586  1 -o $@
-Processed/0005/slicmask.nii.gz: Processed/0005/slic.nii.gz Processed/0005/mask.nii.gz
-	c3d $^ -binarize  -multiply -replace 986 1 2720 1 1612 1 1587 1 2680 1 -o $@
 
 Processed/0001/gmmaif.nii.gz: Processed/0001/anatomygmm.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -add -o $@
