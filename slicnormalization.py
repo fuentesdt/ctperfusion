@@ -7,6 +7,9 @@ parser = OptionParser()
 parser.add_option( "--imagefile",
                   action="store", dest="imagefile", default=None,
                   help="FILE containing image info", metavar="FILE")
+parser.add_option( "--outputfile",
+                  action="store", dest="outputfile", default=None,
+                  help="FILE containing image info", metavar="FILE")
 (options, args) = parser.parse_args()
 
 
@@ -31,7 +34,7 @@ if (options.imagefile != None ):
       if key > 1:
         replacecmd = replacecmd + ' %d %f' % (key,values['Mean'])
   # copy aif data
-  replacecmd = replacecmd + ' %s %s/aif.nii.gz -multiply -add -o %s/mean%s ' % (options.imagefile, rootdir, rootdir,filename)
+  replacecmd = replacecmd + ' %s %s/aif.nii.gz -multiply -add -o  ' % (options.imagefile, rootdir, options.outputfile)
   print  replacecmd
   os.system( replacecmd )
       

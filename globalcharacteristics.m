@@ -6,7 +6,7 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 1:1
+for idata = 2:4
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
 inputfilelist = [ "G1C4anatomymask" ];
 for memberID = inputfilelist 
@@ -27,6 +27,7 @@ AUCTimeInterval = '10'
 OutputSln = convertStringsToChars(strcat(OutputBase,memberID,'solution.nii.gz'))
 OutputRsd = convertStringsToChars(strcat(OutputBase,memberID,'residual.nii.gz'))
 OutputIdx = convertStringsToChars(strcat(OutputBase,memberID,'globalid.nii.gz'))
+OutputNCCIdx = convertStringsToChars(strcat(OutputBase,memberID,'nccglobalid.nii.gz'))
 OutputAif = convertStringsToChars(strcat(OutputBase,memberID,'aifplot'))
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
@@ -143,6 +144,21 @@ globalmin = squeeze(globalmin);
 
 % compute velocity map
 velocity = 1/deltatmedian * distanceImage.*globalidx.^-1;
+nccvelocity = 1/deltatmedian * distanceImage.*nccglobalidx.^-1;
+
+%% save as nifti
+nccidxnii = make_nii(nccglobalidx,[],[],[],'nccindex');
+OutputNCCIdx = convertStringsToChars(strcat(OutputBase,memberID,'nccglobalid.nii.gz'))
+save_nii(nccidxnii,OutputNCCIdx ) ;
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputNCCIdx ' -copy-transform -o ' OutputNCCIdx ];
+disp(copyheader ); c3derrmsg = evalc(copyheader);
+
+%% save as nifti
+nccsolnnii = make_nii(nccglobalidx,[],[],[],'nccindex');
+OutputNCCSoln = convertStringsToChars(strcat(OutputBase,memberID,'nccsolution.nii.gz'))
+save_nii(nccsolnnii,OutputNCCSoln ) ;
+copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputNCCSoln ' -copy-transform -o ' OutputNCCSoln ];
+disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 %% save as nifti
 idxnii = make_nii(globalidx,[],[],[],'index');
