@@ -6,10 +6,10 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 1:4
+for idata = 3:3
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
-%inputfilelist = [ "G1C4anatomymask" "mean"];
-inputfilelist = [ "mean"];
+inputfilelist = [ "G1C4anatomymask" "mean"];
+%inputfilelist = [ "mean"];
 for memberID = inputfilelist 
 
 
@@ -94,9 +94,10 @@ for jjj =1:length(xroi)
   aif(:,jjj) = rawdce(:,xroi(jjj),yroi(jjj),zroi(jjj));
 end
 
+  
 handle = figure(1);
 set(gca,'fontsize',28)
-plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-');
+plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-',timing, rawdce(:,294,215,80),'b');
 xlabel('time [s]')
 ylabel('attenuation [HU]')
 saveas(handle,OutputAif ,'png')
@@ -105,6 +106,10 @@ saveas(handle,OutputAif ,'png')
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 % TODO take avg ? 
 modelaif =aif(:,1)
+[ncc,lags] = xcorr(rawdce(:,294,215,80),modelaif,'normalize');
+[maxncc, nccidx ] =  max(ncc)
+figure(2);stem(lags,ncc)
+stop
 % global search residual
 rsdsize = size(rawdce);
 rsdsize(1) = 19;
