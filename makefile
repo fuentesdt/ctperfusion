@@ -17,6 +17,7 @@ DYNAMICDATA =  0001 0002 0003 0004
 
 
 
+view: $(addprefix Processed/,$(addsuffix /viewslic,$(DYNAMICDATA))) 
 setup: $(addprefix Processed/,$(addsuffix /setup,$(DYNAMICDATA))) 
 slic: $(addprefix Processed/,$(addsuffix /slic.nii.gz,$(DYNAMICDATA))) 
 roi: $(addprefix Processed/,$(addsuffix /roi.nii.gz,$(DYNAMICDATA))) 
@@ -42,12 +43,17 @@ ifft: $(addprefix Processed/,$(addsuffix /ifft.nii.gz,$(DYNAMICDATA)))
 vesselpca: $(addprefix Processed/,$(addsuffix /sdtvesselpca.nii.gz,$(DYNAMICDATA))) 
 velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /velocity.csv,$(DYNAMICDATA))) 
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
-ktrans: $(addprefix Processed/,$(addsuffix /ConstantBAT3param/ktrans.csv,$(DYNAMICDATA))) 
+ktrans: $(addprefix Processed/,$(addsuffix /ConstantBAT3param/ktrans.nii.gz,$(DYNAMICDATA))) 
 bv: $(addprefix Processed/,$(addsuffix /PeakGradient3param/bv.nii.gz,$(DYNAMICDATA))) 
-SOLUTIONLIST =  solution globalid meansolution meanglobalid
-lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
+SOLUTIONLIST =  G1C4anatomymasksolution G1C4anatomymaskglobalid G1C4anatomymasknccsolution G1C4anatomymasknccglobalid meansolution meanglobalid
+lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) $(addprefix Processed/,$(addsuffix /ConstantBAT3param/ktrans.csv,$(DYNAMICDATA))) 
+#lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
+
+Processed/%solution.nii.gz:
+	c3d -verbose Processed/$(*)globalid.nii.gz -reciprocal $(@D)/sdt.nii.gz -multiply -scale 0.6667 -o $@ 
 
 wideformat.csv:
+	 echo sqlite3  -init wide.sql
 	 cat wide.sql  | sqlite3
 clusterrsync:
 	rsync  -v -avz   --include='000?/' --exclude='*Warp.nii.gz'  /rsrch3/ip/dtfuentes/github/ctperfusion/Processed/ Processed/
@@ -83,14 +89,14 @@ Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewmask: Processed/%/mask.nii.gz
 	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $<  -o $(@D)/dynamicG1C4anatomymaskmip.nii.gz  $(@D)/ConstantBAT3param/bv.nii.gz   $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/diagnostics.nii.gz
-Processed/%/viewslic: 
-	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz
+Processed/%/viewslic:  Processed/%/slicmask.nii.gz
+	vglrun itksnap -g $(@D)/G1C4anatomymasknccsolution.nii.gz -s $<  -o $(@D)/G1C4anatomymaskglobalid.nii.gz $(@D)/G1C4anatomymasknccglobalid.nii.gz  $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/fpv.nii.gz & 
 Processed/%/viewsoln: 
 	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz $(@D)/globalid.nii.gz $(@D)/solution.nii.gz $(@D)/residual.nii.gz  $(@D)/meanglobalid.nii.gz $(@D)/meansolution.nii.gz $(@D)/meanresidual.nii.gz $(@D)/slicmask.nii.gz 
 Processed/%/arclengthfiducials.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.gz
-	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $(word 2,$^)  -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nhdr");slicer.util.loadVolume("$(@D)/dynamic.nhdr");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
+	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $< -o $(@D)/sigmoidspeed.nii.gz $(@D)/mipindex.nii.gz $(@D)/vesseldistance.nii.gz  & $(SLICER)  --python-code 'slicer.util.loadVolume("$(@D)/dynamicG1C4anatomymask.nhdr");slicer.util.loadVolume("$(@D)/dynamic.nhdr");slicer.util.loadLabelVolume( "$<");slicer.util.loadLabelVolume("$(@D)/mipindex.nii.gz");slicer.util.loadLabelVolume( "$(word 2,$^)")' 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz -s $(@D)/vesselmask.nii.gz  -o $< $(@D)/vesselness.?.nii.gz  $(@D)/otsu.?.nii.gz 
 	echo vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $@  -o $(@D)/dynamicG1C4anatomymasksigmoid.nii.gz $(@D)/mipindex.nii.gz $(@D)/dynamicG1C4anatomymasksubtract.nii.gz 
 Processed/%/slic.nii.gz:
@@ -101,7 +107,7 @@ Processed/%/sdtgrad.nii.gz: Processed/%/sdt.nii.gz Processed/%/vesselmask.nii.gz
 Processed/%/sdtvesselpca.nii.gz: Processed/%/sdtgrad.nii.gz Processed/%/vesselpca.nii.gz Processed/%/vesselmask.nii.gz
 	c3d -verbose $(word 3,$^) -binarize -replace 1 0 0 1 -popas C -mcs $< -popas A3 -popas A2 -popas A1 $(word 2,$^) -popas B3 -popas B2 -popas B1  -push A1 -push C  -multiply -push B1 -add  -push A2 -push C  -multiply -push B2 -add  -push A3 -push C  -multiply -push B3 -add -omc $@
 Processed/%/sdt.nii.gz: Processed/%/vesselmask.nii.gz
-	c3d -verbose $<  -binarize -sdt  -o $@
+	c3d -verbose $<  -replace 2 0  -sdt  -o $@
 Processed/%/dynamicmean.nrrd: 
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4incsum.0000.nii.gz --outputfile=Processed/$*/meandynamic.0000.nii.gz
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4incsum.0001.nii.gz --outputfile=Processed/$*/meandynamic.0001.nii.gz
@@ -514,7 +520,7 @@ Processed/%/dynamicinc.nrrd:
 	for idfile in $$(seq  0 32);do BUILDCMD=''; for idtransform in $$(seq -f "%04g" $$(($$idfile+1)) 33);do BUILDCMD="inc.$$idtransform.antsintroWarp.nii.gz inc.$$idtransform.antsintroAffine.txt $$BUILDCMD "; done; echo /opt/apps/ANTS/dev/install/bin/WarpImageMultiTransform 3 dynamic.$$(printf %04d $$idfile).nii.gz inc.$$(printf %04d $$idfile).antsintrodeformed.nii.gz $$BUILDCMD -R dynamic.0033.nii.gz ; done
 	@echo c3d $(@D)/inc.*.antsintro.nii.gz $(@D)/dynamic.0033.nii.gz  -omc $@
 
-Processed/%/ConstantBAT3param/ktrans.csv: Processed/%/ConstantBAT3param/ktrans.nii.gz 
+Processed/%/ConstantBAT3param/ktrans.csv: 
 	c3d $(@D)/ktrans.nii.gz $(dir $(@D))/slicmask.nii.gz -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),ktrans,slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt > $@
 	c3d $(@D)/fpv.nii.gz $(dir $(@D))/slicmask.nii.gz -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),fpv,slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt > $(@D)/fpv.csv
 	c3d $(@D)/ve.nii.gz $(dir $(@D))/slicmask.nii.gz -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),ve,slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt >  $(@D)/ve.csv
@@ -529,8 +535,8 @@ Processed/0001/velocity.nii.gz:
 Processed/0001/outline.nii.gz: 
 	c3d -verbose Processed/0001/vesselmask.nii.gz -split -foreach -dup -dilate 0 1x1x0 -scale -1 -add -endfor -merge -type short -o $@
 
-Processed/%/slicmask.nii.gz: Processed/%/slic.nii.gz Processed/%/mask.nii.gz
-	c3d $^ -binarize  -multiply  -o $@
+Processed/%/slicmask.nii.gz: Processed/%/slic.nii.gz Processed/%/mask.nii.gz Processed/%/vesselmask.nii.gz
+	c3d $< $(word 2,$^) -binarize  -multiply $(word 3,$^) -binarize -replace 1 0 0 1 -multiply -o $@
 
 Processed/0001/gmmaif.nii.gz: Processed/0001/anatomygmm.nii.gz Processed/0001/mask.nii.gz
 	c3d $^ -binarize  -add -o $@

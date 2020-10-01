@@ -6,9 +6,10 @@ if ~isdeployed
   addpath('./nifti');
 end
 
-for idata = 2:4
+for idata = 1:4
 OutputBase   = ['Processed/',sprintf('%04d',idata),'/']
-inputfilelist = [ "G1C4anatomymask" ];
+%inputfilelist = [ "G1C4anatomymask" "mean"];
+inputfilelist = [ "mean"];
 for memberID = inputfilelist 
 
 
@@ -28,6 +29,7 @@ OutputSln = convertStringsToChars(strcat(OutputBase,memberID,'solution.nii.gz'))
 OutputRsd = convertStringsToChars(strcat(OutputBase,memberID,'residual.nii.gz'))
 OutputIdx = convertStringsToChars(strcat(OutputBase,memberID,'globalid.nii.gz'))
 OutputNCCIdx = convertStringsToChars(strcat(OutputBase,memberID,'nccglobalid.nii.gz'))
+OutputNCCSoln = convertStringsToChars(strcat(OutputBase,memberID,'nccsolution.nii.gz'))
 OutputAif = convertStringsToChars(strcat(OutputBase,memberID,'aifplot'))
 %% assert floating
 AUCTimeInterval  = str2double(AUCTimeInterval)
@@ -38,13 +40,12 @@ disp(['[rawdce, dcemeta] =nrrdread(''',InputNRRD,''');']);
 
 %% Get Timing Info
 if memberID == 'mean'
-   disp('HACK - FIXME - use previous timing ');
-   timing 
-else
-  rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
-  if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
-    timing = rawtiming * 1.e-3   % convert to seconds 
-  end
+   disp('HACK - use timing in other file ');
+  [rawdcetiming, dcemeta] = nrrdread(convertStringsToChars(strcat(OutputBase,'dynamicG1C4anatomymask.nrrd')));
+end
+rawtiming = eval(['[',dcemeta.multivolumeframelabels,']']);
+if dcemeta.multivolumeframeidentifyingdicomtagunits == 'ms'
+  timing = rawtiming * 1.e-3   % convert to seconds 
 end
 
 %% variable spacing
@@ -148,14 +149,12 @@ nccvelocity = 1/deltatmedian * distanceImage.*nccglobalidx.^-1;
 
 %% save as nifti
 nccidxnii = make_nii(nccglobalidx,[],[],[],'nccindex');
-OutputNCCIdx = convertStringsToChars(strcat(OutputBase,memberID,'nccglobalid.nii.gz'))
 save_nii(nccidxnii,OutputNCCIdx ) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputNCCIdx ' -copy-transform -o ' OutputNCCIdx ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);
 
 %% save as nifti
-nccsolnnii = make_nii(nccglobalidx,[],[],[],'nccindex');
-OutputNCCSoln = convertStringsToChars(strcat(OutputBase,memberID,'nccsolution.nii.gz'))
+nccsolnnii = make_nii(nccvelocity,[],[],[],'nccvelocity');
 save_nii(nccsolnnii,OutputNCCSoln ) ;
 copyheader = ['!' c3dexe ' '  InputAIFNifti ' ' OutputNCCSoln ' -copy-transform -o ' OutputNCCSoln ];
 disp(copyheader ); c3derrmsg = evalc(copyheader);

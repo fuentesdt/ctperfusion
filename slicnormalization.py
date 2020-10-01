@@ -34,7 +34,7 @@ if (options.imagefile != None ):
       if key > 1:
         replacecmd = replacecmd + ' %d %f' % (key,values['Mean'])
   # copy aif data
-  replacecmd = replacecmd + ' %s %s/aif.nii.gz -multiply -add -o  ' % (options.imagefile, rootdir, options.outputfile)
+  replacecmd = replacecmd + ' %s %s/aif.nii.gz -multiply -add -o %s ' % (options.imagefile, rootdir, options.outputfile)
   print  replacecmd
   os.system( replacecmd )
       
