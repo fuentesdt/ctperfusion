@@ -45,14 +45,17 @@ velocity: $(addprefix Processed/,$(addsuffix /velocity.nhdr,$(DYNAMICDATA))) $(a
 reg: $(addprefix Processed/,$(addsuffix /dynamicG1C4.nhdr,$(DYNAMICDATA))) 
 ktrans: $(addprefix Processed/,$(addsuffix /ConstantBAT3param/ktrans.nii.gz,$(DYNAMICDATA))) 
 bv: $(addprefix Processed/,$(addsuffix /PeakGradient3param/bv.nii.gz,$(DYNAMICDATA))) 
+meanbat: $(addprefix Processed/,$(addsuffix /PeakGradient3parammean/ktrans.nii.gz,$(DYNAMICDATA))) 
 #SOLUTIONLIST =  G1C4anatomymasksolution G1C4anatomymaskglobalid G1C4anatomymasknccsolution G1C4anatomymasknccglobalid meansolution meanglobalid
-SOLUTIONLIST =  G1C4anatomymaskbatsolution 
+SOLUTIONLIST =  G1C4anatomymaskbatsolution meansolution 
 lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) $(addprefix Processed/,$(addsuffix /PeakGradient3param/bat.csv,$(DYNAMICDATA)))  $(addprefix Processed/,$(addsuffix /ConstantBAT3param/ktrans.csv,$(DYNAMICDATA))) 
 #lstat: $(foreach idfile,$(SOLUTIONLIST), $(addprefix Processed/,$(addsuffix /$(idfile).csv,$(DYNAMICDATA))) ) 
 
-Processed/%solution.nii.gz:
+Processed/%/G1C4anatomymaskbatsolution.nii.gz:
 	echo c3d -verbose Processed/$(*)globalid.nii.gz -reciprocal $(@D)/sdt.nii.gz -multiply -scale 0.6667 -o $@ 
 	c3d -verbose $(@D)/PeakGradient3param/bat.nii.gz -reciprocal $(@D)/sdt.nii.gz -multiply -scale 0.6667 -o $@ 
+Processed/%/meansolution.nii.gz:
+	c3d -verbose $(@D)/PeakGradient3parammean/bat.nii.gz -reciprocal $(@D)/sdt.nii.gz -multiply -scale 0.6667 -o $@ 
 
 wideformat.csv:
 	 echo sqlite3  -init wide.sql
@@ -92,9 +95,17 @@ Processed/%/aif.nii.gz: Processed/%/mask.nii.gz
 Processed/%/viewmask: Processed/%/mask.nii.gz
 	vglrun itksnap -g $(@D)/dynamicG1C4anatomymasksubtract.nii.gz -s $<  -o $(@D)/dynamicG1C4anatomymaskmip.nii.gz  $(@D)/ConstantBAT3param/bv.nii.gz   $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz
 Processed/%/viewslic:  Processed/%/slicmask.nii.gz
-	vglrun itksnap -g $(@D)/G1C4anatomymaskbatsolution.nii.gz -s $<  -o $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/fpv.nii.gz $(@D)/PeakGradient3param/bat.nii.gz  $(@D)/ConstantBAT3param/diagnostics.nii.gz
-Processed/%/viewsoln: 
-	vglrun itksnap -g $(@D)/dynamic.nrrd -s $(@D)/slicmask.nii.gz -o $(@D)/sdt.nii.gz $(@D)/globalid.nii.gz $(@D)/solution.nii.gz $(@D)/residual.nii.gz  $(@D)/meanglobalid.nii.gz $(@D)/meansolution.nii.gz $(@D)/meanresidual.nii.gz $(@D)/slicmask.nii.gz 
+	vglrun itksnap -g $(@D)/G1C4anatomymaskbatsolution.nii.gz -s $<  -o $(@D)/sdt.nii.gz $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/fpv.nii.gz $(@D)/PeakGradient3param/bat.nii.gz  $(@D)/ConstantBAT3param/diagnostics.nii.gz
+Processed/%/pubfigure: Processed/%/vesselmask.nii.gz
+	c3d $(@D)/G1C4anatomymaskbatsolution.nii.gz $(@D)/mask.nii.gz -binarize -multiply -o $(@D)/G1C4anatomymaskbatsolutionmask.nii.gz 
+	c3d $(@D)/sdt.nii.gz                        $(@D)/mask.nii.gz -binarize -multiply -o $(@D)/sdtmask.nii.gz 
+	c3d $(@D)/ConstantBAT3param/fpv.nii.gz      $(@D)/mask.nii.gz -binarize -multiply -clip -.15 .15  -o $(@D)/ConstantBAT3param/fpvmask.nii.gz
+	c3d $(@D)/PeakGradient3param/bat.nii.gz     $(@D)/mask.nii.gz -binarize -multiply -clip 0 15 -scale 1.5 -o $(@D)/PeakGradient3param/batmask.nii.gz  
+	vglrun itksnap -g  $(@D)/dynamicG1C4anatomymaskmip.nii.gz -s $<  -o $(@D)/G1C4anatomymaskbatsolutionmask.nii.gz $(@D)/sdtmask.nii.gz  $(@D)/ConstantBAT3param/fpvmask.nii.gz $(@D)/PeakGradient3param/batmask.nii.gz  
+
+
+Processed/%/viewsoln:  Processed/%/vesselmask.nii.gz
+	vglrun itksnap -g $(@D)/G1C4anatomymaskbatsolution.nii.gz -s $<  -o $(@D)/sdt.nii.gz $(@D)/ConstantBAT3param/ktrans.nii.gz  $(@D)/ConstantBAT3param/ve.nii.gz $(@D)/ConstantBAT3param/fpv.nii.gz $(@D)/PeakGradient3param/bat.nii.gz  $(@D)/ConstantBAT3param/diagnostics.nii.gz
 Processed/%/arclengthfiducials.nii.gz: Processed/%/mask.nii.gz
 	if [ ! -f $@  ] ; then c3d $< -scale 0 -type uchar $@ ; else touch $@ ; fi
 Processed/%/viewaif: Processed/%/aif.nii.gz Processed/%/arclengthfiducials.nii.gz
@@ -145,7 +156,9 @@ Processed/%/dynamicmean.nrrd:
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4incsum.0031.nii.gz --outputfile=Processed/$*/meandynamic.0031.nii.gz
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4inc.0032.nii.gz    --outputfile=Processed/$*/meandynamic.0032.nii.gz
 	python slicnormalization.py --imagefile=Processed/$*/dynamic.0033.nii.gz           --outputfile=Processed/$*/meandynamic.0033.nii.gz
-	c3d $(@D)/meandynamic.*.nii.gz -omc $@
+	c3d -verbose $(@D)/meandynamic.*.nii.gz -omc $(basename $@).nhdr -omc $@
+	grep MultiVolume Processed/$*/dynamic.nhdr >> $(basename $@).nhdr
+
 
 CLUSTERDIR = /rsrch3/home/imag_phy-rsrch/dtfuentes/github/ctperfusion
 Processed/%/dynamicG1C4dbg.0000.nii.gz:
@@ -422,6 +435,9 @@ Processed/%/dynamicG1C4anatomymask.nrrd:
 
 Processed/%/PeakGradient3param/bv.nii.gz: Processed/%/PeakGradient3param/ktrans.nii.gz
 	ls $@
+Processed/%/PeakGradient3parammean/ktrans.nii.gz:
+	mkdir -p $(@D)
+	/rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling --fpv0 .1 --ve0 .1 --ktrans0 3. --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 12. --computeFpv --roiMask $(dir $(@D))/anatomymask.nii.gz --aifMask $(dir $(@D))/aif.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/bv.nii.gz  --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nrrd  --fitted  $(@D)/fitted.nrrd  --outputDiagnostics  $(@D)/diagnostics.nii.gz Processed/$*/dynamicmean.nhdr
 Processed/%/PeakGradient3param/ktrans.nii.gz:
 	mkdir -p $(@D)
 	/rsrch1/ip/dtfuentes/github/PkModeling/pkmodeling-build/bin/PkModeling --fpv0 .1 --ve0 .1 --ktrans0 3. --T1Blood 1600 --T1Tissue 1597 --relaxivity 0.0039 --S0grad 15.0 --fTolerance 1e-4 --gTolerance 1e-4 --xTolerance 1e-5 --epsilon 1e-9 --maxIter 200 --hematocrit 0.4 --aucTimeInterval 12. --computeFpv --roiMask $(dir $(@D))/anatomymask.nii.gz --aifMask $(dir $(@D))/aif.nii.gz --outputKtrans $@ --outputVe $(@D)/ve.nii.gz --outputFpv $(@D)/fpv.nii.gz  --outputMaxSlope  $(@D)/maxslope.nii.gz  --outputAUC  $(@D)/bv.nii.gz  --outputRSquared  $(@D)/rsquared.nii.gz  --outputBAT  $(@D)/bat.nii.gz     --concentrations  $(@D)/concentrations.nrrd  --fitted  $(@D)/fitted.nrrd  --outputDiagnostics  $(@D)/diagnostics.nii.gz Processed/$*/dynamicG1C4anatomymask.nrrd
@@ -534,7 +550,7 @@ Processed/%/ConstantBAT3param/ktrans.csv:
 
 Processed/%/G1C4anatomymaskbatsolution.csv: Processed/%/G1C4anatomymaskbatsolution.nii.gz
 	c3d $< $(@D)/PeakGradient3param/bat.nii.gz -binarize $(@D)/slicmask.nii.gz -multiply -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),$(<F),slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt > $@
-Processed/%.csv: Processed/%.nii.gz
+Processed/%/meansolution.csv: Processed/%/meansolution.nii.gz
 	c3d $< $(@D)/slicmask.nii.gz -lstat > $(basename $@).txt &&  sed "s/^\s\+/$(firstword $(subst /, ,$*)),$(<F),slicmask.nii.gz,/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g" $(basename $@).txt > $@
 
 Processed/0001/velocity.nii.gz:
