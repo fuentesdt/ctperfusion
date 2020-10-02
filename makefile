@@ -109,7 +109,7 @@ Processed/%/sdtgrad.nii.gz: Processed/%/sdt.nii.gz Processed/%/vesselmask.nii.gz
 Processed/%/sdtvesselpca.nii.gz: Processed/%/sdtgrad.nii.gz Processed/%/vesselpca.nii.gz Processed/%/vesselmask.nii.gz
 	c3d -verbose $(word 3,$^) -binarize -replace 1 0 0 1 -popas C -mcs $< -popas A3 -popas A2 -popas A1 $(word 2,$^) -popas B3 -popas B2 -popas B1  -push A1 -push C  -multiply -push B1 -add  -push A2 -push C  -multiply -push B2 -add  -push A3 -push C  -multiply -push B3 -add -omc $@
 Processed/%/sdt.nii.gz: Processed/%/vesselmask.nii.gz
-	c3d -verbose $<  -replace 2 0  -sdt  -o $@
+	c3d -verbose $<  -binarize   -sdt  -o $@
 Processed/%/dynamicmean.nrrd: 
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4incsum.0000.nii.gz --outputfile=Processed/$*/meandynamic.0000.nii.gz
 	python slicnormalization.py --imagefile=Processed/$*/dynamicG1C4incsum.0001.nii.gz --outputfile=Processed/$*/meandynamic.0001.nii.gz
