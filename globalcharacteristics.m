@@ -95,9 +95,8 @@ for jjj =1:length(xroi)
 end
 
   
-handle = figure(1);
-set(gca,'fontsize',28)
-plot(  timing, aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-',timing, rawdce(:,294,215,80),'b');
+handle = figure(1); set(gca,'fontsize',28); plot(  timing,  aif(:,1),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-',timing, rawdce(:,294,215,80),'b');
+handle = figure(1); set(gca,'fontsize',28); plot(  timing(2:end),  diff(aif(:,1)),'x-', timing, aif(:,2),'x-',timing, aif(:,3),'x-',timing(2:end), diff(rawdce(:,294,215,80)),'b');
 xlabel('time [s]')
 ylabel('attenuation [HU]')
 saveas(handle,OutputAif ,'png')
@@ -106,9 +105,8 @@ saveas(handle,OutputAif ,'png')
 % plot(rawdce(:,278,69,7 )); hold;  plot( rawdce(:,280,57,9)); plot(rawdce(:,251,63,12));
 % TODO take avg ? 
 modelaif =aif(:,1)
-[ncc,lags] = xcorr(rawdce(:,294,215,80),modelaif,'normalize');
+[ncc,lags] = xcorr(diff(rawdce(:,294,215,80)),diff(modelaif)); figure(2);stem(lags,ncc)
 [maxncc, nccidx ] =  max(ncc)
-figure(2);stem(lags,ncc)
 stop
 % global search residual
 rsdsize = size(rawdce);
