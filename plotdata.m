@@ -7,7 +7,14 @@ alldata  = readtable( 'wideformat.csv')
 
 plotcounter = 0;
 for idata = 1:4
+%for idata = 2:2
   OutputBase        = ['Processed/',sprintf('%04d',idata),'/']
+  hadata = readtable(fullfile(OutputBase,'hepaticartery.distance.csv'));
+  haradmean = hadata.Mean(hadata.LabelID==1) *1.e-3
+  haradstdd = hadata.StdD(hadata.LabelID==1) *1.e-3
+  pvdata = readtable(fullfile(OutputBase,'portalvein.distance.csv'))
+  pvradmean = pvdata.Mean(pvdata.LabelID==1) *1.e-3
+  pvradstdd = pvdata.StdD(pvdata.LabelID==1) *1.e-3
   OutputCorrelation = [OutputBase , 'correlation']
   %studydata= alldata(alldata.InstanceUID==idata& alldata.meanglobalid ~= 19,:);
   studydata= alldata(alldata.InstanceUID==idata & alldata.ve> .0 & alldata.batsolution<8. &alldata.fpv>-.15 & alldata.fpv<.15 &alldata.LabelID~=0& ~isnan(alldata.bat),:);
@@ -15,6 +22,10 @@ for idata = 1:4
   [sprho,sppval] = corr(studydata.batsolution, studydata.meansolution,'Type','Spearman') ;
   plotcounter = plotcounter +1; handle = figure(plotcounter );
   plot( studydata.batsolution,        studydata.meansolution ,'x', studydata.batsolution,sprho*studydata.batsolution,'r') 
+  flowrate = 177; % ml/min
+  flowrate = 177/ 60* 1e-6; % ml/min * 1min/60sec * 1e-6 mm^3/1ml
+  mykappaha(idata) = mean(studydata.batsolution * pi * haradmean^4 /8./flowrate);
+  mykappapv(idata) = mean(studydata.batsolution * pi * pvradmean^4 /8./flowrate);
   xlabel('pixelwise avg speed [mm/s]')
   ylabel('super pixel speed [mm/s]')
   text(5,8,['r = ',sprintf('%3.2f',sprho)])
@@ -57,3 +68,5 @@ end
 %table({'bat';'ktrans';'ve';'fpv'},gblrawrho(:,1),gblrawpval(:,1),gblslnrho(:,1),gblslnpval(:,1),'VariableNames',{'id' 'rho' 'pval' 'slnrho' 'slnpval'})
 table(repmat({'ktran'; 'fpv'; 've'; 'ktransinvve'}, [1 4]),squeeze(myrho(4:7,1,:)),squeeze(mypval(4:7,1,:)),'VariableNames',{'id' 'rawrho' 'rawpval' }')
 table(repmat({'ktran'; 'fpv'; 've'; 'ktransinvve'}, [1 4]),squeeze(myrho(4:7,2,:)),squeeze(mypval(4:7,2,:)),'VariableNames',{'id' 'slnrho' 'slnpval' }')
+
+table([1:4]',mykappaha', mykappapv','VariableNames',{'id' 'ha' 'pv' })

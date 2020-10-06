@@ -37,6 +37,7 @@ vesselmask: $(addprefix Processed/,$(addsuffix /vesselmask.nii.gz,$(DYNAMICDATA)
 sdt: $(addprefix Processed/,$(addsuffix /sdt.nii.gz,$(DYNAMICDATA))) 
 arclength: $(addprefix Processed/,$(addsuffix /arclength.json,$(DYNAMICDATA))) 
 vesseldistance: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.nii.gz,$(DYNAMICDATA))) 
+measureradius: $(addprefix Processed/,$(addsuffix /hepaticartery.distance.csv,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.distance.csv,$(DYNAMICDATA))) 
 surfacearea: $(addprefix Processed/,$(addsuffix /hepaticartery.surfacearea.csv,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /portalvein.surfacearea.csv,$(DYNAMICDATA))) 
 laplacebc: $(addprefix Processed/,$(addsuffix /laplacebc.nii.gz,$(DYNAMICDATA))) $(addprefix Processed/,$(addsuffix /smoothmask.nii.gz,$(DYNAMICDATA))) 
 ifft: $(addprefix Processed/,$(addsuffix /ifft.nii.gz,$(DYNAMICDATA)))
@@ -272,7 +273,8 @@ Processed/%.centerline.nii.gz: Processed/%.connected.nii.gz Processed/%.thin.nii
 	c3d -verbose $< -binarize -dup -binarize -dilate 1 1x1x1vox -add $(word 2,$^) -binarize -add -o $@
 Processed/%.distance.nii.gz: Processed/%.centerline.nii.gz
 	c3d -verbose $< -thresh 3 3 1 0 -sdt -o $@ 
-	c3d $@ $< -lstat
+Processed/%.distance.csv: Processed/%.distance.nii.gz Processed/%.centerline.nii.gz
+	c3d $^ -lstat > Processed/$*.distance.txt && sed "s/^\s\+/$(firstword $(subst  /, ,$*)),$(word 2,$(^F)),$(<F),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*.distance.txt  > $@
 Processed/%.surfacearea.csv: Processed/%.centerline.nii.gz
 	c3d $(@D)/mask.nii.gz -binarize $< -multiply -dup -lstat > Processed/$*.surfacearea.txt && sed "s/^\s\+/$(firstword $(subst  /, ,$*)),$(<F),$(<F),/g;s/\s\+/,/g;s/LabelID/InstanceUID,SegmentationID,FeatureID,LabelID/g;s/Vol(mm^3)/Vol.mm.3/g;s/Extent(Vox)/ExtentX,ExtentY,ExtentZ/g"   Processed/$*.surfacearea.txt  > $@
 Processed/%/dt.0033.nii.gz:
